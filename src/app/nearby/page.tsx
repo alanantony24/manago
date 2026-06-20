@@ -11,6 +11,7 @@ import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area"
 
 import { Button } from "@/components/ui/button"
 
+import Map from './components/map'
 
 export default function Nearby() {
     return (
@@ -32,9 +33,9 @@ export default function Nearby() {
                 </InputGroup>
             </div>
            
-            <div className="flex flex-col w-full max-w-full p-4">
+            <div className="flex flex-col w-full max-w-full gap-4 p-4">
                 <ScrollArea className="w-full rounded-md whitespace-nowrap">
-                    <div className="flex flex-row gap-3 p-4">
+                    <div className="flex flex-row gap-3">
                         <Button variant="outline" size="lg">
                         <LayoutGrid /> All
                         </Button>
@@ -54,12 +55,14 @@ export default function Nearby() {
 
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
-                <div className='flex flex-row justify-between p-4'>
+                <Map />
+                <div className="flex flex-row items-center justify-between">
                     <h3 className='font-bold'>Nearby You</h3>
                     <Button variant="outline" className='bg-cyan-600 text-white'>
                         <SlidersHorizontal /> Sort
                     </Button>
                 </div>
+                
                  {/* Separate this into a separate component */}
                 <div className='flex flex-col gap-4 w-full min-w-0'>
                     <div className='flex flex-row gap-4 border-2 border-gray-300 rounded-md p-4 w-full min-w-0'>
