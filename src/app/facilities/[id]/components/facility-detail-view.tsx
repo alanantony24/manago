@@ -2,6 +2,7 @@
 
 import { Link } from "next-view-transitions"
 import {
+  AlertTriangle,
   ChevronLeft,
   Star,
   Clock,
@@ -19,6 +20,8 @@ import {
 } from "@/lib/mock-reviews"
 import {
   formatUpdatedAt,
+  getDataQualityWarning,
+  getFacilityDataQuality,
   getFacilityLocation,
   getFacilitySummary,
   getFacilityTags,
@@ -59,6 +62,8 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
   const tags = getFacilityTags(facility)
   const location = getFacilityLocation(facility)
   const summary = getFacilitySummary(facility)
+  const dataQuality = getFacilityDataQuality(facility)
+  const qualityWarning = getDataQualityWarning(dataQuality)
   const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
 
   return (
@@ -88,6 +93,20 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <h1 className="text-xl font-bold text-gray-900">{facility.name}</h1>
           <p className="mt-1 text-sm text-gray-500">{location}</p>
+
+          {qualityWarning && (
+            <div
+              className={`mt-4 flex gap-3 rounded-xl border p-3 text-sm ${
+                dataQuality === "minimal"
+                  ? "border-amber-200 bg-amber-50 text-amber-900"
+                  : "border-yellow-200 bg-yellow-50 text-yellow-900"
+              }`}
+              role="status"
+            >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <p>{qualityWarning}</p>
+            </div>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-1.5">

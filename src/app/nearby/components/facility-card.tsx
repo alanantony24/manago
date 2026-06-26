@@ -1,14 +1,14 @@
 "use client"
 
 import { useTransitionRouter } from "next-view-transitions"
-import { MapPin, FileText, Star, Navigation } from "lucide-react"
+import { MapPin, FileText, Star, Navigation, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   FacilityTagPill,
 } from "@/components/facility-tag-pill"
 import type { FacilityWithDistance } from "@/types/facility"
 import { formatDistance } from "@/lib/geo"
-import { getFacilityNotes } from "@/lib/facility-helpers"
+import { getFacilityDataQuality, getFacilityNotes } from "@/lib/facility-helpers"
 
 type FacilityCardProps = {
   facility: FacilityWithDistance
@@ -19,6 +19,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
   const tags: string[] = []
   const typeName = facility.amenity_types?.label
   const notes = getFacilityNotes(facility.description)
+  const dataQuality = getFacilityDataQuality(facility)
 
   if (typeName) tags.push(typeName)
   if (facility.is_accessible) tags.push("PWD Friendly")
@@ -49,9 +50,19 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
           <h3 className="font-bold text-lg leading-tight text-gray-900">
             {facility.name}
           </h3>
-          <span className="shrink-0 rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
-            {formatDistance(facility.distanceKm)}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {dataQuality !== "complete" && (
+              <span
+                className="rounded-full bg-amber-50 p-1 text-amber-600"
+                title="Limited location data"
+              >
+                <AlertTriangle className="size-3.5" />
+              </span>
+            )}
+            <span className="rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
+              {formatDistance(facility.distanceKm)}
+            </span>
+          </div>
         </div>
 
         {facility.address && (
