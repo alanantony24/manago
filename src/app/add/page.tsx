@@ -14,7 +14,7 @@ export default function Location() {
 
   const [selected, setSelected] = useState({});
 
-  const toggleButton = (facility) => {
+  const toggleButton = (facility : string ) => {
     setSelected((prev) => ({
       ...prev,
       [facility]: !prev[facility],
@@ -33,7 +33,7 @@ export default function Location() {
 
   const [selectedFeatures, setSelectedFeatures] = useState({});
 
-  const toggleFeature = (feature) => {
+  const toggleFeature = (feature : string) => {
     setSelectedFeatures((prev) => ({
       ...prev,
       [feature]: !prev[feature],
@@ -55,8 +55,7 @@ export default function Location() {
             <button
               key={facility}
               onClick={() => toggleButton(facility)}
-              className={`px-4 py-2 border rounded-xl active:bg-[#A3C793] ${selected[facility]
-                ? "bg-white border-[#0B7F7F]"
+              className={`px-4 py-2 border rounded-xl active:bg-[#A3C793] ${selected[facility] ? "bg-white border-[#0B7F7F]"
                 : "bg-white border-gray-300"
                 }`}
             >
