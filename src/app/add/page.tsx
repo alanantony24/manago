@@ -84,7 +84,7 @@ export default function Location() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Opening Hours</h2>
 
-          <button type="checkbox" className="rounded-xl border border-gray-300 px-4 py-2">
+          <button className="rounded-xl border border-gray-300 px-4 py-2">
             24 hours
           </button>
         </div>
