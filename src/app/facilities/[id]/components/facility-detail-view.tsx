@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "next-view-transitions"
 import {
   ChevronLeft,
   Star,
@@ -9,6 +9,7 @@ import {
   Navigation,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { Facility } from "@/types/facility"
 import {
   MOCK_RATING,
@@ -106,12 +107,7 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
 
           <div className="mt-4 flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-700"
-              >
-                {tag}
-              </span>
+              <FacilityTagPill key={tag}>{tag}</FacilityTagPill>
             ))}
           </div>
 
@@ -164,12 +160,9 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
                 {review.tags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {review.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-medium text-cyan-700"
-                      >
+                      <FacilityTagPill key={tag} className="text-[11px]">
                         {tag}
-                      </span>
+                      </FacilityTagPill>
                     ))}
                   </div>
                 )}

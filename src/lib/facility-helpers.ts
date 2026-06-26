@@ -1,5 +1,11 @@
 import type { Facility } from "@/types/facility"
 
+export function getFacilityNotes(description: string | null): string | null {
+  if (!description) return null
+  const notes = description.split(" | Source:")[0]?.trim()
+  return notes || null
+}
+
 export function getFacilityTags(facility: Facility): string[] {
   const tags: string[] = []
 
