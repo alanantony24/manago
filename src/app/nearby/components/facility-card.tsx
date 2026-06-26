@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { FacilityWithDistance } from "@/types/facility"
@@ -7,10 +8,10 @@ import { formatDistance } from "@/lib/geo"
 
 type FacilityCardProps = {
   facility: FacilityWithDistance
-  onSelect?: () => void
 }
 
-export default function FacilityCard({ facility, onSelect }: FacilityCardProps) {
+export default function FacilityCard({ facility }: FacilityCardProps) {
+  const router = useRouter()
   const tags: string[] = []
   const typeName = facility.amenity_types?.label
 
@@ -23,11 +24,13 @@ export default function FacilityCard({ facility, onSelect }: FacilityCardProps) 
   return (
     <div
       className="flex flex-row gap-4 border-2 border-gray-300 rounded-md p-4 w-full min-w-0 cursor-pointer hover:border-cyan-600 transition-colors"
-      onClick={onSelect}
-      role="button"
+      onClick={() => router.push(`/facilities/${facility.id}`)}
+      role="link"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onSelect?.()
+        if (e.key === "Enter" || e.key === " ") {
+          router.push(`/facilities/${facility.id}`)
+        }
       }}
     >
       <img

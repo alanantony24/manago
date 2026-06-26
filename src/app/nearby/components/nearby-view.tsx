@@ -147,11 +147,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
             </p>
           ) : (
             filteredFacilities.map((facility) => (
-              <FacilityCard
-                key={facility.id}
-                facility={facility}
-                onSelect={() => setSelectedFacilityId(facility.id)}
-              />
+              <FacilityCard key={facility.id} facility={facility} />
             ))
           )}
         </div>
