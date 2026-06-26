@@ -12,12 +12,12 @@ export default function Location() {
     "Baby Changing",
   ];
 
-  const [selected, setSelected] = useState({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const toggleButton = (facility : string ) => {
     setSelected((prev) => ({
       ...prev,
-      [facility]: !prev[facility],
+      [facility]: !prev[facility]
     }));
   };
 
@@ -31,12 +31,12 @@ export default function Location() {
     "Hand Dryer",
   ];
 
-  const [selectedFeatures, setSelectedFeatures] = useState({});
+  const [selectedFeatures, setSelectedFeatures] = useState<Record<string, boolean>>({});
 
   const toggleFeature = (feature : string) => {
     setSelectedFeatures((prev) => ({
       ...prev,
-      [feature]: !prev[feature],
+      [feature]: !prev[feature]
     }));
   };
 
