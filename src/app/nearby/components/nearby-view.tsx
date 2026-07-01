@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import {
-  MapPin,
   Search,
   LayoutGrid,
   GlassWater,
@@ -19,6 +18,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import Map from "./map"
 import FacilityCard from "./facility-card"
+import BrandLogo from "@/components/brand-logo"
 import type { Facility } from "@/types/facility"
 import { getDistanceKm } from "@/lib/geo"
 
@@ -84,21 +84,21 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
-      <div className="w-full bg-cyan-600 flex flex-col items-center justify-center gap-4 rounded-b-2xl py-6">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-10 h-10 text-yellow-500" />
-          <h1 className="text-white text-2xl font-bold">ManaGo!</h1>
+      <div className="w-full bg-[#007979] flex flex-col gap-2.5 rounded-b-[1.25rem] px-4 pb-6 pt-5 sm:gap-3 sm:rounded-b-3xl sm:pb-7 sm:pt-6">
+        <div className="flex items-center justify-center">
+          <BrandLogo />
         </div>
 
-        <InputGroup className="max-w-xs bg-white">
+        <InputGroup className="h-10 w-full rounded-full border-0 bg-white shadow-sm sm:h-11">
+          <InputGroupAddon className="pl-3.5 text-gray-400 sm:pl-4">
+            <Search className="size-4 sm:size-[1.125rem]" />
+          </InputGroupAddon>
           <InputGroupInput
-            placeholder="Search..."
+            className="text-sm placeholder:text-gray-400 sm:text-base"
+            placeholder="What are you looking for?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
         </InputGroup>
       </div>
 
