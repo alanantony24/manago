@@ -108,85 +108,6 @@ export default function Location() {
     setSuggestions(data.features ?? []);
   }
 
-  // async function handleSubmit() {
-  //   setSubmitting(true);
-
-  //   try {
-  //     const selectedFacilities = Object.keys(selected).filter(
-  //       (key) => selected[key]
-  //     );
-
-  //     const selectedFeatureList = Object.keys(selectedFeatures).filter(
-  //       (key) => selectedFeatures[key]
-  //     );
-
-  //     let imageUrl: string | null = null;
-
-  //     // Upload image
-  //     if (image) {
-  //       const fileName = `${Date.now()}-${image.name}`;
-
-  //       const { error: uploadError } = await supabase.storage
-  //         .from("addlocation-images")
-  //         .upload(fileName, image);
-
-  //       if (uploadError) {
-  //         throw new Error(`Image upload failed: ${uploadError.message}`);
-  //       }
-
-  //       imageUrl = supabase.storage
-  //         .from("addlocation-images")
-  //         .getPublicUrl(fileName).data.publicUrl;
-  //     }
-
-
-
-  //     // Save to Supabase
-  //     const { error } = await supabase
-  //       .from("add_new_facility")
-  //       .insert([
-  //         {
-  //           location: locationQuery,
-  //           exact_location: exactLocation,
-  //           latitude,
-  //           longitude,
-  //           facility_type: selectedFacilities,
-  //           features: selectedFeatureList,
-  //           open_time: is24Hours ? null : openTime,
-  //           close_time: is24Hours ? null : closeTime,
-  //           is_24_hours: is24Hours,
-  //           image_url: imageUrl,
-
-  //         },
-  //       ]);
-
-  //     if (error) {
-  //       throw new Error(error.message);
-  //     }
-
-  //     alert("Submission successful!");
-
-  //     // Optional: Reset form after successful submission
-  //     setSelected({});
-  //     setSelectedFeatures({});
-  //     setOpenTime("");
-  //     setCloseTime("");
-  //     setIs24Hours(false);
-  //     setImage(null);
-  //     setPreview(null);
-
-  //   } catch (err) {
-  //     console.error(err);
-
-  //     if (err instanceof Error) {
-  //       alert(err.message);
-  //     } else {
-  //       alert("Something went wrong.");
-  //     }
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // }
   async function handleSubmit() {
 
   // ⭐ NEW - clear previous errors
@@ -195,6 +116,7 @@ export default function Location() {
     location: "",
     exactLocation: "",
     openingHours: "",
+    closingHours: "",
     image: "",
   });
 
@@ -206,12 +128,13 @@ export default function Location() {
     (key) => selectedFeatures[key]
   );
 
-  // ⭐ NEW - validation
+  // validation
   const newErrors = {
     facility: "",
     location: "",
     exactLocation: "",
     openingHours: "",
+    closingHours: "",
     image: "",
   };
 
