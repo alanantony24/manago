@@ -2,68 +2,53 @@ import type { Facility } from "@/types/facility"
 
 export type DataQuality = "complete" | "partial" | "minimal"
 
-function stripMetadataSuffixes(description: string): string {
-  return description
-    .split(" | Source:")[0]
-    ?.split(" | Region:")[0]
-    ?.split(" | Data quality:")[0]
-    ?.trim() ?? ""
-}
+// When facilities are seeded, the description column is stored as a single
+// string with tagged metadata, for example:
+//   "Unisex toilet. | Region: East | Source: OSM | Data quality: partial"
+// This splits that string back into the human-readable notes and the tags.
+function parseDescription(description: string | null) {
+  let notes = ""
+  let region: string | null = null
+  let quality: DataQuality | null = null
 
-function dedupeDisplayText(text: string): string {
-  const sentences = text
-    .replace(/^OSM tags:\s*/gi, "")
-    .split(/(?<=[.!?])\s+|[|]/)
-    .map((part) => part.trim())
-    .filter(Boolean)
+  for (const segment of (description ?? "").split(" | ")) {
+    const part = segment.trim()
 
-  const seen = new Set<string>()
-  const unique: string[] = []
-
-  for (const sentence of sentences) {
-    const key = sentence.toLowerCase().replace(/[.!?\s]+/g, " ").trim()
-    if (!key || seen.has(key)) continue
-    seen.add(key)
-    unique.push(sentence.endsWith(".") ? sentence : `${sentence}.`)
+    if (part.startsWith("Region:")) {
+      region = part.slice("Region:".length).trim() || null
+    } else if (part.startsWith("Data quality:")) {
+      const value = part.slice("Data quality:".length).trim()
+      if (value === "complete" || value === "partial" || value === "minimal") {
+        quality = value
+      }
+    } else if (part.startsWith("Source:")) {
+      // Internal metadata, not shown to users.
+    } else if (!notes) {
+      notes = part
+    }
   }
 
-  return unique.join(" ")
+  return { notes, region, quality }
 }
 
 export function getFacilityNotes(description: string | null): string | null {
-  if (!description) return null
-  const notes = dedupeDisplayText(stripMetadataSuffixes(description))
-  return notes || null
+  return parseDescription(description).notes || null
 }
 
 export function getFacilityRegion(description: string | null): string | null {
-  if (!description) return null
-  const match = description.match(/ \| Region: ([^|]+)/)
-  return match?.[1]?.trim() ?? null
+  return parseDescription(description).region
 }
 
 export function getFacilityDataQuality(facility: Facility): DataQuality {
-  if (facility.description) {
-    const match = facility.description.match(/Data quality: (complete|partial|minimal)/)
-    if (match) return match[1] as DataQuality
-  }
+  const { notes, region, quality } = parseDescription(facility.description)
+  if (quality) return quality
 
+  // Fallback for rows without a stored quality tag.
   const hasAddress = Boolean(facility.address?.trim())
-  const notes = getFacilityNotes(facility.description)
-  const hasMeaningfulDetails = Boolean(notes && notes.length > 15)
-  const hasRegion = Boolean(getFacilityRegion(facility.description))
-  const hasSpecificName = !/^(water cooler|public (drinking )?water)/i.test(
-    facility.name
-  )
+  const hasDetails = notes.length > 15
 
-  if (hasAddress && hasSpecificName && (hasMeaningfulDetails || hasRegion)) {
-    return "complete"
-  }
-
-  if (!hasAddress && !hasMeaningfulDetails && !hasSpecificName) {
-    return "minimal"
-  }
-
+  if (hasAddress && (hasDetails || region)) return "complete"
+  if (!hasAddress && !hasDetails) return "minimal"
   return "partial"
 }
 
@@ -78,11 +63,11 @@ export function getDataQualityWarning(quality: DataQuality): string | null {
 export function getFacilityTags(facility: Facility): string[] {
   const tags: string[] = []
 
-  const typeLabel = facility.amenity_types?.label
-  if (typeLabel?.toLowerCase().includes("bidet")) tags.push("Bidet")
+  if (facility.amenity_types?.label?.toLowerCase().includes("bidet")) {
+    tags.push("Bidet")
+  }
   if (facility.is_accessible) tags.push("Accessible")
   if (facility.is_verified) tags.push("Verified")
-
   tags.push("24 Hours")
 
   return tags
@@ -91,32 +76,21 @@ export function getFacilityTags(facility: Facility): string[] {
 export function getFacilityLocation(facility: Facility): string {
   const parts: string[] = []
 
-  if (
-    facility.building_name &&
-    facility.building_name !== facility.name
-  ) {
+  if (facility.building_name && facility.building_name !== facility.name) {
     parts.push(facility.building_name)
   }
-
   if (facility.floor) parts.push(facility.floor)
+  if (facility.address) parts.push(facility.address)
 
-  if (facility.address) {
-    parts.push(facility.address)
-  } else if (parts.length === 0) {
-    const region = getFacilityRegion(facility.description)
-    if (region) return `${region}, Singapore`
-  }
+  if (parts.length > 0) return parts.join(", ")
 
-  return parts.join(", ") || "Singapore"
+  const region = getFacilityRegion(facility.description)
+  return region ? `${region}, Singapore` : "Singapore"
 }
 
 export function getFacilitySummary(facility: Facility): string {
-  if (facility.description) {
-    const withoutSource = dedupeDisplayText(
-      stripMetadataSuffixes(facility.description)
-    )
-    if (withoutSource && withoutSource.length > 10) return withoutSource
-  }
+  const notes = getFacilityNotes(facility.description)
+  if (notes && notes.length > 10) return notes
 
   const typeLabel = facility.amenity_types?.label ?? "facility"
   const location = facility.building_name ?? facility.name

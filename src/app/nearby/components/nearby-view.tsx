@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/input-group"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import Map from "./map"
+import FacilityMap from "./map"
 import FacilityCard from "./facility-card"
 import BrandLogo from "@/components/brand-logo"
 import type { Facility } from "@/types/facility"
@@ -124,7 +124,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        <Map
+        <FacilityMap
           facilities={filteredFacilities}
           selectedFacilityId={selectedFacilityId}
           onUserLocation={setUserLocation}
