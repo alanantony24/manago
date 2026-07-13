@@ -1,16 +1,15 @@
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import type { Facility } from "@/types/facility"
-import type { Review } from "@/types/review"
-import FacilityDetailView from "./components/facility-detail-view"
+import ReviewForm from "./components/review-form"
 
 export const dynamic = "force-dynamic"
 
-type FacilityPageProps = {
+type ReviewPageProps = {
   params: Promise<{ id: string }>
 }
 
-export default async function FacilityPage({ params }: FacilityPageProps) {
+export default async function ReviewPage({ params }: ReviewPageProps) {
   const { id } = await params
 
   if (
@@ -31,17 +30,13 @@ export default async function FacilityPage({ params }: FacilityPageProps) {
     notFound()
   }
 
-  const { data: reviewsData } = await supabase
-    .from("reviews")
-    .select("*")
-    .eq("facility_id", id)
-    .eq("is_approved", true)
-    .order("created_at", { ascending: false })
+  const facility = data as Facility
 
   return (
-    <FacilityDetailView
-      facility={data as Facility}
-      reviews={(reviewsData ?? []) as Review[]}
+    <ReviewForm
+      facilityId={facility.id}
+      facilityName={facility.name}
+      facilityPhoto={facility.photo_url ?? "/toilet.jpg"}
     />
   )
 }
