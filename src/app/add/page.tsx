@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { AppPageHeader } from "@/components/app-page-header";
 import { supabase } from "@/lib/supabase";
 
@@ -14,6 +15,12 @@ const SECTION_TITLE = "mb-4 text-xl font-bold text-manago-navy";
 
 const INPUT =
   "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-manago-navy placeholder:text-gray-500 focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
+
+type MapboxSuggestion = {
+  id: string;
+  place_name: string;
+  center: [number, number];
+};
 
 export default function AddFacilityPage() {
   const facilities = [
@@ -41,14 +48,17 @@ export default function AddFacilityPage() {
   const [closeTime, setCloseTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const preview = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
 
   const [locationQuery, setLocationQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
   const [exactLocation, setExactLocation] = useState("");
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("");
 
 
   const [errors, setErrors] = useState({
@@ -78,20 +88,20 @@ export default function AddFacilityPage() {
   };
 
   useEffect(() => {
-    if (!image) {
-      setPreview(null);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(image);
-    setPreview(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [image]);
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
 
   async function searchLocation(query: string) {
     setLocationQuery(query);
+    setLocationStatus("");
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
 
     if (query.length < 3) {
       setSuggestions([]);
@@ -107,6 +117,50 @@ export default function AddFacilityPage() {
     const data = await response.json();
 
     setSuggestions(data.features ?? []);
+  }
+
+  function handleUseCurrentLocation() {
+    setLocationStatus("");
+
+    if (!navigator.geolocation) {
+      setLocationStatus("Current location is not supported by this browser.");
+      return;
+    }
+
+    setIsLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setIsUsingCurrentLocation(true);
+        setSuggestions([]);
+        setErrors((prev) => ({ ...prev, location: "" }));
+        setLocationStatus(
+          "Current location pinned. Type the place name in the field above."
+        );
+        setIsLocating(false);
+      },
+      () => {
+        setLocationStatus(
+          "Unable to get your current location. Please allow location access and try again."
+        );
+        setIsLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }
+
+  function handleSearchInstead() {
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
+    setSuggestions([]);
+    setLocationStatus("Search mode enabled. Choose a location from the dropdown.");
   }
 
   async function handleSubmit() {
@@ -142,7 +196,8 @@ export default function AddFacilityPage() {
     }
 
     if (!locationQuery.trim() || latitude === null || longitude === null) {
-      newErrors.location = "Please select a location from the suggestions.";
+      newErrors.location =
+        "Please select a location from the suggestions or use your current location pin.";
     }
 
     if (!exactLocation.trim()) {
@@ -219,14 +274,15 @@ export default function AddFacilityPage() {
       setExactLocation("");
       setLatitude(null);
       setLongitude(null);
+      setIsUsingCurrentLocation(false);
       setSuggestions([]);
+      setLocationStatus("");
 
       setOpenTime("");
       setCloseTime("");
       setIs24Hours(false);
 
       setImage(null);
-      setPreview(null);
 
     } catch (err) {
       console.error(err);
@@ -288,15 +344,68 @@ export default function AddFacilityPage() {
         )}
         <input
           type="text"
-          placeholder="Search for a location"
+          aria-label={
+            isUsingCurrentLocation ? "Place name" : "Search for a location"
+          }
+          placeholder={
+            isUsingCurrentLocation
+              ? "Type the place name"
+              : "Search for a location"
+          }
           value={locationQuery}
-          onChange={(e) => searchLocation(e.target.value)}
+          onChange={(e) => {
+            if (isUsingCurrentLocation) {
+              setLocationQuery(e.target.value);
+              return;
+            }
+
+            searchLocation(e.target.value);
+          }}
           className={INPUT}
         />
 
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          disabled={isLocating}
+          className={`${BUTTON} mt-3 flex w-full items-center justify-center gap-2 disabled:opacity-60 ${
+            isUsingCurrentLocation
+              ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+              : "border-manago-teal-dark bg-manago-chip"
+          }`}
+          title="Use your current location for latitude and longitude"
+        >
+          <LocateFixed className="size-4" aria-hidden />
+          {isLocating
+            ? "Getting current location..."
+            : isUsingCurrentLocation
+              ? "Current location pinned"
+              : "Use current location pin"}
+        </button>
+
+        {isUsingCurrentLocation && (
+          <button
+            type="button"
+            onClick={handleSearchInstead}
+            className={`${BUTTON} mt-2 w-full border-gray-500 bg-white hover:border-manago-teal`}
+          >
+            Search for location instead
+          </button>
+        )}
+
+        {locationStatus && (
+          <p className="mt-2 text-sm text-gray-600">{locationStatus}</p>
+        )}
+
+        {latitude !== null && longitude !== null && (
+          <p className="mt-2 text-xs text-gray-500">
+            Coordinates set: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+          </p>
+        )}
+
         {suggestions.length > 0 && (
           <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow-sm">
-            {suggestions.map((place: any) => (
+            {suggestions.map((place) => (
               <button
                 key={place.id}
                 type="button"
@@ -305,7 +414,9 @@ export default function AddFacilityPage() {
                   setLocationQuery(place.place_name);
                   setLatitude(place.center[1]);
                   setLongitude(place.center[0]);
+                  setIsUsingCurrentLocation(false);
                   setSuggestions([]);
+                  setLocationStatus("Location selected from suggestions.");
                 }}
               >
                 {place.place_name}
@@ -404,7 +515,6 @@ export default function AddFacilityPage() {
               const file = e.target.files?.[0];
               if (!file) return;
               setImage(file);
-              setPreview(URL.createObjectURL(file));
             }}
           />
         </label>
