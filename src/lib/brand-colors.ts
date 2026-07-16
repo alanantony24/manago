@@ -1,3 +1,4 @@
+/** ManaGo brand palette — single source of truth for UI color. */
 export const MANAGO_TEAL = "#007979"
 export const MANAGO_TEAL_DARK = "#0B7F7F"
 export const MANAGO_NAVY = "#1A4D59"

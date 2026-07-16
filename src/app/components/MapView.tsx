@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { MANAGO_BRAND_ORANGE, MANAGO_TEAL } from '@/lib/brand-colors';
+import { getDistanceMeters } from '@/lib/geo';
 
 interface Props {
   userLocation: [number, number] | null;
@@ -12,19 +14,6 @@ interface Props {
 }
 
 const REROUTE_THRESHOLD_M = 15;
-
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
 export default function MapView({ userLocation, destination, destinationName, onRouteInfo }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -66,7 +55,7 @@ export default function MapView({ userLocation, destination, destinationName, on
     if (userMarker.current) {
       userMarker.current.setLngLat(userLocation);
     } else {
-      userMarker.current = new mapboxgl.Marker({ color: '#3B82F6' })
+      userMarker.current = new mapboxgl.Marker({ color: MANAGO_TEAL })
         .setLngLat(userLocation)
         .setPopup(new mapboxgl.Popup().setText('You are here'))
         .addTo(map.current);
@@ -77,7 +66,8 @@ export default function MapView({ userLocation, destination, destinationName, on
     const [lastLng, lastLat] = lastFetchedAt.current ?? [];
     const movedFar =
       lastFetchedAt.current === null ||
-      getDistance(lastLat!, lastLng!, userLocation[1], userLocation[0]) > REROUTE_THRESHOLD_M;
+      getDistanceMeters(lastLat!, lastLng!, userLocation[1], userLocation[0]) >
+        REROUTE_THRESHOLD_M;
 
     if (!movedFar) return;
 
@@ -108,7 +98,7 @@ export default function MapView({ userLocation, destination, destinationName, on
         const addRoute = () => {
           if (!map.current) return;
 
-          new mapboxgl.Marker({ color: '#0D9488' })
+          new mapboxgl.Marker({ color: MANAGO_BRAND_ORANGE })
             .setLngLat(destination)
             .setPopup(new mapboxgl.Popup().setText(destinationName ?? 'Destination'))
             .addTo(map.current);
@@ -123,7 +113,7 @@ export default function MapView({ userLocation, destination, destinationName, on
             type: 'line',
             source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: { 'line-color': '#0D9488', 'line-width': 5 },
+            paint: { 'line-color': MANAGO_TEAL, 'line-width': 5 },
           });
         };
 

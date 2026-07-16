@@ -9,7 +9,7 @@ export default function FacilityNotFound() {
       </p>
       <Link
         href="/nearby"
-        className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white"
+        className="rounded-lg bg-manago-teal px-4 py-2 text-sm font-medium text-white"
       >
         Back to nearby
       </Link>

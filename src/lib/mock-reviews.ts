@@ -22,7 +22,7 @@ export const MOCK_REVIEWS: MockReview[] = [
     rating: 5,
     tags: ["Clean", "Bidet", "Accessible"],
     body: "Very clean and well-maintained. Bidet works perfectly. Accessible cubicle is spacious.",
-    avatarColor: "bg-cyan-600",
+    avatarColor: "bg-manago-teal",
   },
   {
     id: "2",

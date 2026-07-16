@@ -48,7 +48,7 @@ function StarRating({
           key={i}
           className={`${starSize} ${
             i < Math.round(rating)
-              ? "fill-yellow-400 text-yellow-400"
+              ? "fill-manago-orange text-manago-orange"
               : "text-gray-300"
           }`}
         />
@@ -90,7 +90,7 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
           <ChevronLeft className="size-6 text-gray-800" />
         </Link>
 
-        <span className="absolute right-4 top-4 rounded-full bg-cyan-600 px-3 py-1 text-sm font-medium text-white shadow-md">
+        <span className="absolute right-4 top-4 rounded-full bg-manago-teal px-3 py-1 text-sm font-medium text-white shadow-md">
           {typeLabel}
         </span>
       </div>
@@ -149,7 +149,7 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
             <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
             <button
               type="button"
-              className="text-sm font-medium text-cyan-600 hover:text-cyan-700"
+              className="text-sm font-medium text-manago-teal hover:text-manago-teal-dark"
             >
               Write one
             </button>
@@ -205,13 +205,13 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         <div className="mx-auto flex max-w-lg gap-3">
           <Button
             variant="outline"
-            className="h-12 flex-1 rounded-xl border-cyan-600 text-cyan-600 hover:bg-cyan-50"
+            className="h-12 flex-1 rounded-xl border-manago-teal text-manago-teal hover:bg-manago-mint/40"
           >
             <Star className="size-4" />
             Review
           </Button>
           <Button
-            className="h-12 flex-1 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700"
+            className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
             onClick={() =>
               window.open(navigateUrl, "_blank", "noopener,noreferrer")
             }

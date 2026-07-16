@@ -1,10 +1,7 @@
 import { cn } from "@/lib/utils"
 import { ericaOne } from "@/lib/fonts"
-import { MANAGO_NAVY } from "@/lib/brand-colors"
-import {
-  MANAGO_BRAND_ORANGE,
-  ManaGoPinIcon,
-} from "@/components/manago-pin-icon"
+import { MANAGO_BRAND_ORANGE, MANAGO_NAVY } from "@/lib/brand-colors"
+import { ManaGoPinIcon } from "@/components/manago-pin-icon"
 
 type BrandLogoProps = {
   className?: string

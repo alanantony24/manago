@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
+import { MANAGO_BRAND_ORANGE, MANAGO_TEAL } from "@/lib/brand-colors"
 import type { Facility } from "@/types/facility"
 
 // Singapore city center. Used until we know where the user actually is.
@@ -56,7 +57,7 @@ export default function FacilityMap({
             position.coords.latitude,
           ]
 
-          new mapboxgl.Marker({ color: "#0891b2" }).setLngLat(coords).addTo(map)
+          new mapboxgl.Marker({ color: MANAGO_TEAL }).setLngLat(coords).addTo(map)
           map.flyTo({ center: coords, zoom: NEARBY_ZOOM })
           onUserLocationRef.current?.(coords)
         },
@@ -100,7 +101,7 @@ export default function FacilityMap({
           : `<strong>${facility.name}</strong>`
       )
 
-      const marker = new mapboxgl.Marker({ color: "#eab308" })
+      const marker = new mapboxgl.Marker({ color: MANAGO_BRAND_ORANGE })
         .setLngLat([facility.longitude, facility.latitude])
         .setPopup(popup)
         .addTo(map)

@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/app-page-header";
-import { supabase } from "../../lib/supabase";
-import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const CARD =
-  "bg-white rounded-2xl shadow-md p-5 m-4";
+  "m-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm";
 
 const BUTTON =
-  "px-4 py-2 rounded-xl border transition-colors";
+  "rounded-xl border px-4 py-2 text-sm font-medium text-manago-navy transition-colors";
 
-export default function Location() {
+const SECTION_TITLE = "mb-4 text-xl font-bold text-manago-navy";
+
+const INPUT =
+  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-manago-navy placeholder:text-gray-500 focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
+
+export default function AddFacilityPage() {
   const facilities = [
     "Toilet w/ bidet",
     "Toilet",
@@ -32,8 +36,6 @@ export default function Location() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [selectedFeatures, setSelectedFeatures] =
     useState<Record<string, boolean>>({});
-
-  // const [location, setLocation] = useState("");
   const [is24Hours, setIs24Hours] = useState(false);
   const [openTime, setOpenTime] = useState("");
   const [closeTime, setCloseTime] = useState("");
@@ -240,31 +242,30 @@ export default function Location() {
     }
   }
   return (
-    <main className="min-h-screen bg-gray-100 pb-8">
+    <main className="min-h-screen bg-gray-50 pb-8 text-manago-navy">
       <AppPageHeader subtitle="Add a Facility" />
 
       {/* Facility Type */}
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
+        <h2 className={SECTION_TITLE}>
           Facility Type
           <span className="ml-1 text-red-500">*</span>
         </h2>
 
         {errors.facility && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.facility}
-          </p>
+          <p className="mb-3 text-sm text-red-600">{errors.facility}</p>
         )}
         <div className="flex flex-wrap gap-3">
-          {facilities.map(facility => (
+          {facilities.map((facility) => (
             <button
               key={facility}
               type="button"
               onClick={() => toggleButton(facility)}
-              className={`${BUTTON} ${selected[facility]
-                ? "bg-[#A3C793] border-[#0B7F7F]"
-                : "bg-white border-gray-300"
-                }`}
+              className={`${BUTTON} ${
+                selected[facility]
+                  ? "border-manago-teal-dark bg-manago-chip"
+                  : "border-gray-500 bg-white hover:border-manago-teal"
+              }`}
             >
               {facility}
             </button>
@@ -274,33 +275,32 @@ export default function Location() {
 
       {/* Location */}
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
+        <h2 className={SECTION_TITLE}>
           Location
           <span className="ml-1 text-red-500">*</span>
         </h2>
-        <p className="">eg. City Square Mall Level 2 Toilet</p>
+        <p className="mb-3 text-sm text-gray-600">
+          eg. City Square Mall Level 2 Toilet
+        </p>
 
         {errors.location && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.location}
-          </p>
+          <p className="mb-2 text-sm text-red-600">{errors.location}</p>
         )}
         <input
           type="text"
           placeholder="Search for a location"
           value={locationQuery}
           onChange={(e) => searchLocation(e.target.value)}
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
-
+          className={INPUT}
         />
 
         {suggestions.length > 0 && (
-          <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow">
+          <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow-sm">
             {suggestions.map((place: any) => (
               <button
                 key={place.id}
                 type="button"
-                className="block w-full px-4 py-3 text-left hover:bg-gray-100"
+                className="block w-full px-4 py-3 text-left text-manago-navy hover:bg-gray-50"
                 onClick={() => {
                   setLocationQuery(place.place_name);
                   setLatitude(place.center[1]);
@@ -315,109 +315,94 @@ export default function Location() {
         )}
 
         {errors.exactLocation && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.exactLocation}
-          </p>
+          <p className="mt-2 text-sm text-red-600">{errors.exactLocation}</p>
         )}
         <input
           type="text"
           placeholder="Floor / Exact area (e.g. Level 2 beside KFC)"
           value={exactLocation}
           onChange={(e) => setExactLocation(e.target.value)}
-          className="mt-3 w-full rounded-xl border border-gray-300 px-4 py-3"
+          className={`mt-3 ${INPUT}`}
         />
       </section>
 
-
-
       {/* Opening Hours */}
       <div className={CARD}>
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Opening Hours</h2>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-manago-navy">Opening Hours</h2>
 
           <button
             type="button"
             onClick={toggle24Hours}
-            className={`px-4 py-2 rounded-xl border ${is24Hours
-              ? "bg-[#0B7F7F] text-white border-[#0B7F7F]"
-              : "bg-white border-gray-300"
-              }`}
+            className={`${BUTTON} ${
+              is24Hours
+                ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+                : "border-gray-500 bg-white hover:border-manago-teal"
+            }`}
           >
             24 Hours
           </button>
-
-
         </div>
-
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-600">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Opens
             </label>
-
             <input
               type="time"
               value={openTime}
               onChange={(e) => setOpenTime(e.target.value)}
               disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 transition
-        ${is24Hours
-                  ? "cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "border-gray-300 bg-white focus:border-[#0B7F7F] focus:outline-none"
-                }`}
+              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
+                is24Hours
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
+              }`}
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-600">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Closes
             </label>
-
             <input
               type="time"
               value={closeTime}
               onChange={(e) => setCloseTime(e.target.value)}
               disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 transition
-        ${is24Hours
-                  ? "cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "border-gray-300 bg-white focus:border-[#0B7F7F] focus:outline-none"
-                }`}
+              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
+                is24Hours
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
+              }`}
             />
           </div>
         </div>
 
         {errors.openingHours && (
-            <p className="mt-2 text-sm text-red-500">
-              {errors.openingHours}
-            </p>
-          )}
+          <p className="mt-2 text-sm text-red-600">{errors.openingHours}</p>
+        )}
       </div>
 
       {/* Photo Upload */}
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
-          Photo Upload
-        </h2>
+        <h2 className={SECTION_TITLE}>Photo Upload</h2>
 
-        <label className="flex cursor-pointer flex-col items-center justify-center 
-        rounded-2xl border-2 border-dashed border-gray-300 py-10 transition hover:border-[#0B7F7F] hover:bg-gray-50">
-          <span className="text-5xl">📷</span>
-
-          <span className="mt-3 text-gray-500">
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-400 py-10 transition hover:border-manago-teal-dark hover:bg-manago-mint/30">
+          <span className="text-5xl" aria-hidden>
+            📷
+          </span>
+          <span className="mt-3 text-sm font-medium text-gray-600">
             Tap to add a photo
           </span>
-
           <input
             type="file"
             accept="image/*"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-
               if (!file) return;
-
               setImage(file);
               setPreview(URL.createObjectURL(file));
             }}
@@ -425,12 +410,10 @@ export default function Location() {
         </label>
 
         {errors.image && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.image}
-          </p>
+          <p className="mt-2 text-sm text-red-600">{errors.image}</p>
         )}
         {image && (
-          <p className="mt-3 text-sm text-green-600">
+          <p className="mt-3 text-sm font-medium text-manago-teal-dark">
             ✓ {image.name}
           </p>
         )}
@@ -440,7 +423,7 @@ export default function Location() {
             <img
               src={preview}
               alt="Selected image preview"
-              className="h-48 w-full rounded-xl border object-cover"
+              className="h-48 w-full rounded-xl border border-gray-200 object-cover"
             />
           </div>
         )}
@@ -449,21 +432,20 @@ export default function Location() {
       {/* Features */}
       <section className={CARD}>
         <h2 className="mb-4 flex items-baseline gap-2">
-  <span className="text-xl font-bold">Features</span>
-  <span className="text-sm font-normal text-gray-500">
-    (Optional)
-  </span>
-</h2>
+          <span className="text-xl font-bold text-manago-navy">Features</span>
+          <span className="text-sm font-normal text-gray-500">(Optional)</span>
+        </h2>
         <div className="flex flex-wrap gap-3">
-          {features.map(feature => (
+          {features.map((feature) => (
             <button
               key={feature}
               type="button"
               onClick={() => toggleFeature(feature)}
-              className={`${BUTTON} ${selectedFeatures[feature]
-                ? "bg-[#A3C793] border-[#0B7F7F]"
-                : "bg-white border-gray-300"
-                }`}
+              className={`${BUTTON} ${
+                selectedFeatures[feature]
+                  ? "border-manago-teal-dark bg-manago-chip"
+                  : "border-gray-500 bg-white hover:border-manago-teal"
+              }`}
             >
               {feature}
             </button>
@@ -472,8 +454,8 @@ export default function Location() {
       </section>
 
       {/* Notice */}
-      <section className="mx-4 rounded-2xl bg-[#CBF0ED] p-5">
-        <p className="text-center text-[#084F4F]">
+      <section className="mx-4 rounded-2xl bg-manago-notice p-5">
+        <p className="text-center text-sm font-medium text-manago-notice-text">
           Every submission is reviewed by our team before going live.
         </p>
       </section>
@@ -484,7 +466,7 @@ export default function Location() {
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="rounded-2xl bg-[#0B7F7F] px-10 py-4 font-semibold text-white disabled:opacity-60"
+          className="rounded-2xl bg-manago-teal-dark px-10 py-4 font-semibold text-white disabled:opacity-60"
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>

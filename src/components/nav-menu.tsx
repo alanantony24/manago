@@ -78,8 +78,7 @@ export function MenuToggle({ className, variant = "onDark" }: MenuToggleProps) {
         <span
           className={cn(
             "absolute left-0 top-0.5 block h-[3px] w-6 rounded-full transition-all duration-300 ease-out",
-            isOpen && "top-[9px] rotate-45",
-            variant === "onDark" ? "bg-[#F39C12]" : "bg-[#F39C12]"
+            isOpen && "top-[9px] rotate-45"
           )}
           style={{ backgroundColor: MANAGO_BRAND_ORANGE }}
         />

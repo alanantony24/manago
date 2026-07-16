@@ -83,14 +83,14 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
   }, [facilities, activeFilter, searchQuery, userLocation])
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="w-full max-w-full min-h-screen overflow-x-hidden bg-gray-50 text-manago-navy">
       <AppPageHeader>
         <InputGroup className="h-10 w-full rounded-full border-0 bg-white shadow-sm sm:h-11">
-          <InputGroupAddon className="pl-3.5 text-gray-400 sm:pl-4">
+          <InputGroupAddon className="pl-3.5 text-gray-500 sm:pl-4">
             <Search className="size-4 sm:size-[1.125rem]" />
           </InputGroupAddon>
           <InputGroupInput
-            className="text-sm placeholder:text-gray-400 sm:text-base"
+            className="text-sm text-manago-navy placeholder:text-gray-500 sm:text-base"
             placeholder="What are you looking for?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -98,8 +98,8 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
         </InputGroup>
       </AppPageHeader>
 
-      <div className="flex flex-col w-full max-w-full gap-4 p-4">
-        <ScrollArea className="w-full rounded-md whitespace-nowrap">
+      <div className="flex w-full max-w-full flex-col gap-4 p-4">
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
           <div className="flex flex-row gap-3">
             {FILTERS.map(({ key, label, icon }) => (
               <Button
@@ -108,8 +108,8 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
                 size="lg"
                 className={
                   activeFilter === key
-                    ? "bg-cyan-600 text-white border-cyan-600"
-                    : undefined
+                    ? "border-manago-teal bg-manago-teal text-white hover:bg-manago-teal-dark hover:text-white"
+                    : "border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
                 }
                 onClick={() => setActiveFilter(key)}
               >
@@ -128,15 +128,15 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
         />
 
         <div className="flex flex-row items-center justify-between">
-          <h3 className="font-bold">Nearby You</h3>
-          <Button variant="outline" className="bg-cyan-600 text-white">
+          <h3 className="text-lg font-bold text-manago-navy">Nearby You</h3>
+          <Button className="bg-manago-teal text-white hover:bg-manago-teal-dark">
             <SlidersHorizontal /> Sort
           </Button>
         </div>
 
-        <div className="flex flex-col gap-4 w-full min-w-0">
+        <div className="flex w-full min-w-0 flex-col gap-4">
           {filteredFacilities.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-8">
+            <p className="py-8 text-center text-sm text-gray-600">
               {facilities.length === 0
                 ? "No facilities loaded yet. Seed your Supabase database to see amenities here."
                 : "No facilities match your search or filter."}

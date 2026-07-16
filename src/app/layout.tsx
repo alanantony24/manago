@@ -19,8 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}>
-      <body className="min-h-full flex flex-col">
+    <html
+      lang="en"
+      className={`light h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}
+      style={{ colorScheme: "light" }}
+    >
+      <body className="flex min-h-full flex-col bg-gray-50 text-manago-navy">
         <ClerkProvider>
           <ViewTransitions>
             <NavMenuProvider>{children}</NavMenuProvider>

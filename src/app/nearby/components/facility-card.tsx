@@ -29,7 +29,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
 
   return (
     <article
-      className="flex flex-row gap-4 rounded-xl border border-gray-200 bg-white p-4 w-full min-w-0 cursor-pointer shadow-sm transition-[border-color,box-shadow] hover:border-cyan-300 hover:shadow-md"
+      className="flex w-full min-w-0 cursor-pointer flex-row gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-[border-color,box-shadow] hover:border-manago-teal/40 hover:shadow-md"
       onClick={() => router.push(`/facilities/${facility.id}`)}
       role="link"
       tabIndex={0}
@@ -47,19 +47,19 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-lg leading-tight text-gray-900">
+          <h3 className="text-lg font-bold leading-tight text-manago-navy">
             {facility.name}
           </h3>
           <div className="flex shrink-0 items-center gap-1.5">
             {dataQuality !== "complete" && (
               <span
-                className="rounded-full bg-amber-50 p-1 text-amber-600"
+                className="rounded-full bg-amber-50 p-1 text-amber-700"
                 title="Limited location data"
               >
                 <AlertTriangle className="size-3.5" />
               </span>
             )}
-            <span className="rounded-full bg-cyan-50 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">
+            <span className="rounded-full bg-manago-mint px-2.5 py-0.5 text-xs font-semibold text-manago-teal-dark">
               {formatDistance(facility.distanceKm)}
             </span>
           </div>
@@ -67,7 +67,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
 
         {facility.address && (
           <div className="space-y-0.5">
-            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               <MapPin className="size-3" />
               Location
             </p>
@@ -79,11 +79,11 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
 
         {notes && (
           <div className="space-y-0.5">
-            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               <FileText className="size-3" />
               Details
             </p>
-            <p className="text-sm leading-snug text-gray-500 line-clamp-2">
+            <p className="line-clamp-2 text-sm leading-snug text-gray-600">
               {notes}
             </p>
           </div>
@@ -96,13 +96,13 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
                 key={i}
                 className={`size-3.5 ${
                   i < 4
-                    ? "fill-yellow-400 text-yellow-400"
+                    ? "fill-manago-orange text-manago-orange"
                     : "text-gray-300"
                 }`}
               />
             ))}
           </div>
-          <span className="text-xs text-gray-400">No reviews yet</span>
+          <span className="text-xs text-gray-500">No reviews yet</span>
         </div>
 
         {tags.length > 0 && (
@@ -114,7 +114,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
         )}
 
         <Button
-          className="h-9 w-full rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 sm:w-fit sm:px-5"
+          className="h-9 w-full rounded-lg bg-manago-teal text-white hover:bg-manago-teal-dark sm:w-fit sm:px-5"
           onClick={(e) => {
             e.stopPropagation()
             window.open(navigateUrl, "_blank", "noopener,noreferrer")

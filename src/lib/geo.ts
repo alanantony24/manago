@@ -17,7 +17,18 @@ export function getDistanceKm(
   return R * c
 }
 
+/** Haversine distance in meters. */
+export function getDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  return getDistanceKm(lat1, lon1, lat2, lon2) * 1000
+}
+
 export function formatDistance(km: number): string {
+  if (!Number.isFinite(km)) return "—"
   if (km < 1) return `${Math.round(km * 1000)} m`
   return `${km.toFixed(1)} km`
 }
