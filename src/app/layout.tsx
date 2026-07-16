@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ericaOne } from "@/lib/fonts";
 import { NavMenuProvider } from "@/components/nav-menu";
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}>
       <body className="min-h-full flex flex-col">
-        <ViewTransitions>
-          <NavMenuProvider>{children}</NavMenuProvider>
-        </ViewTransitions>
+        <ClerkProvider>
+          <ViewTransitions>
+            <NavMenuProvider>{children}</NavMenuProvider>
+          </ViewTransitions>
+        </ClerkProvider>
       </body>
     </html>
   );
