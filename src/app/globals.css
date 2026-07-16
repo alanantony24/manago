@@ -165,4 +165,23 @@
   ::view-transition-new(root) {
     animation: none;
   }
+
+  .nav-drawer-link {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.nav-drawer-link {
+  opacity: 0;
+  transform: translateX(-0.75rem);
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out,
+    background-color 0.2s ease;
+}
+
+.nav-drawer-link-visible {
+  opacity: 1;
+  transform: translateX(0);
 }

@@ -10,6 +10,7 @@ import {
   Navigation,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MenuToggle } from "@/components/nav-menu"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { Facility } from "@/types/facility"
 import {
@@ -76,9 +77,14 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
 
+        <MenuToggle
+          variant="onLight"
+          className="absolute left-4 top-4 z-10"
+        />
+
         <Link
           href="/nearby"
-          className="absolute left-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
+          className="absolute left-[4.25rem] top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
           aria-label="Go back"
         >
           <ChevronLeft className="size-6 text-gray-800" />
