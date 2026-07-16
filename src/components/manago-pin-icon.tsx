@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
+import { MANAGO_BRAND_ORANGE } from "@/lib/brand-colors"
 
-export const MANAGO_BRAND_ORANGE = "#F39C12"
+export { MANAGO_BRAND_ORANGE }
 
 export function ManaGoPinIcon({ className }: { className?: string }) {
   return (

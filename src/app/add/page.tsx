@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import Navbar from "../../components/Navbar";
+import { AppPageHeader } from "@/components/app-page-header";
 import { supabase } from "../../lib/supabase";
 import { useEffect } from "react";
 
@@ -241,7 +241,7 @@ export default function Location() {
   }
   return (
     <main className="min-h-screen bg-gray-100 pb-8">
-      <Navbar />
+      <AppPageHeader subtitle="Add a Facility" />
 
       {/* Facility Type */}
       <section className={CARD}>

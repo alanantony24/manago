@@ -18,7 +18,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import FacilityMap from "./map"
 import FacilityCard from "./facility-card"
-import BrandLogo from "@/components/brand-logo"
+import { AppPageHeader } from "@/components/app-page-header"
 import type { Facility } from "@/types/facility"
 import { getDistanceKm } from "@/lib/geo"
 
@@ -84,11 +84,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden">
-      <div className="w-full bg-[#007979] flex flex-col gap-2.5 rounded-b-[1.25rem] px-4 pb-6 pt-5 sm:gap-3 sm:rounded-b-3xl sm:pb-7 sm:pt-6">
-        <div className="flex items-center justify-center">
-          <BrandLogo />
-        </div>
-
+      <AppPageHeader>
         <InputGroup className="h-10 w-full rounded-full border-0 bg-white shadow-sm sm:h-11">
           <InputGroupAddon className="pl-3.5 text-gray-400 sm:pl-4">
             <Search className="size-4 sm:size-[1.125rem]" />
@@ -100,7 +96,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </InputGroup>
-      </div>
+      </AppPageHeader>
 
       <div className="flex flex-col w-full max-w-full gap-4 p-4">
         <ScrollArea className="w-full rounded-md whitespace-nowrap">
