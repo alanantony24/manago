@@ -23,13 +23,12 @@ type MapboxSuggestion = {
 };
 
 export default function AddFacilityPage() {
-  const facilities = [
-    "Toilet w/ bidet",
-    "Toilet",
-    "Water Cooler",
-    "Nursing Home",
-    "Baby Changing",
-  ];
+  type AmenityType = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+};
 
   const features = [
     "Bidet",
@@ -40,7 +39,8 @@ export default function AddFacilityPage() {
     "Hand Dryer",
   ];
 
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(null);
+  const [facilities, setFacilities] = useState<AmenityType[]>([]);
   const [selectedFeatures, setSelectedFeatures] =
     useState<Record<string, boolean>>({});
   const [is24Hours, setIs24Hours] = useState(false);
@@ -69,12 +69,6 @@ export default function AddFacilityPage() {
     image: "",
   });
 
-  const toggleButton = (facility: string) => {
-    setSelected(prev => ({
-      ...prev,
-      [facility]: !prev[facility],
-    }));
-  };
 
   const toggleFeature = (feature: string) => {
     setSelectedFeatures(prev => ({
@@ -94,6 +88,25 @@ export default function AddFacilityPage() {
       }
     };
   }, [preview]);
+
+  useEffect(() => {
+  async function loadAmenityTypes() {
+    const { data, error } = await supabase
+      .from("amenity_types")
+      .select("id, slug, label, icon")
+      .order("label");
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setFacilities(data);
+  }
+
+  loadAmenityTypes();
+}, []);
+
 
 
   async function searchLocation(query: string) {
@@ -174,10 +187,7 @@ export default function AddFacilityPage() {
       image: "",
     });
 
-    const selectedFacilities = Object.keys(selected).filter(
-      (key) => selected[key]
-    );
-
+    
     const selectedFeatureList = Object.keys(selectedFeatures).filter(
       (key) => selectedFeatures[key]
     );
@@ -191,7 +201,7 @@ export default function AddFacilityPage() {
       image: "",
     };
 
-    if (selectedFacilities.length === 0) {
+    if (selectedAmenityId === null) {
       newErrors.facility = "Please select at least one facility type.";
     }
 
@@ -254,7 +264,7 @@ export default function AddFacilityPage() {
             exact_location: exactLocation,
             latitude,
             longitude,
-            facility_type: selectedFacilities,
+            amenity_type_id: selectedAmenityId,
             features: selectedFeatureList,
             open_time: is24Hours ? null : openTime,
             close_time: is24Hours ? null : closeTime,
@@ -268,7 +278,7 @@ export default function AddFacilityPage() {
       alert("Submission successful!");
 
       // Reset form
-      setSelected({});
+      setSelectedAmenityId(null);
       setSelectedFeatures({});
       setLocationQuery("");
       setExactLocation("");
@@ -313,19 +323,22 @@ export default function AddFacilityPage() {
         )}
         <div className="flex flex-wrap gap-3">
           {facilities.map((facility) => (
-            <button
-              key={facility}
-              type="button"
-              onClick={() => toggleButton(facility)}
-              className={`${BUTTON} ${
-                selected[facility]
-                  ? "border-manago-teal-dark bg-manago-chip"
-                  : "border-gray-500 bg-white hover:border-manago-teal"
-              }`}
-            >
-              {facility}
-            </button>
-          ))}
+  <button
+    key={facility.id}
+    type="button"
+    onClick={() => setSelectedAmenityId(
+    selectedAmenityId === facility.id ? null : facility.id
+  )
+}
+    className={`${BUTTON} ${
+      selectedAmenityId === facility.id
+        ? "border-manago-teal-dark bg-manago-chip"
+        : "border-gray-500 bg-white hover:border-manago-teal"
+    }`}
+  >
+    {facility.label}
+  </button>
+))}
         </div>
       </section>
 
