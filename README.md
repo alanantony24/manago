@@ -22,23 +22,19 @@ distance-sorted list, so you can quickly find the closest one and get directions
 
 ## Getting started
 
-1. Install dependencies:
+Use Node.js 20.9 or newer. This repository uses npm and `package-lock.json`;
+do not install from the stale pnpm lockfile.
+
+1. Copy `.env.example` to `.env.local` and fill in the public Supabase and
+   Mapbox values.
+
+2. Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
-2. Create a `.env.local` file in the project root:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your-mapbox-token
-# Only needed for the seed script:
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-```
-
-3. Run the dev server:
+3. Run the development server:
 
 ```bash
 npm run dev
@@ -53,8 +49,9 @@ Open [http://localhost:3000](http://localhost:3000). The home page redirects to
 
 The facility data lives in `data/facilities.json`. To load it into Supabase:
 
-1. Run `supabase/setup.sql` in the Supabase SQL editor to create the tables.
-2. Seed the database:
+1. Use an existing Supabase project with the current ManaGo schema.
+2. Set `SUPABASE_SERVICE_ROLE_KEY` locally for the seed command only.
+3. Seed the database:
 
 ```bash
 npm run seed
@@ -62,6 +59,25 @@ npm run seed
 
 `npm run clean-data` re-processes the raw dataset (tidies names, addresses, and
 notes) and rewrites `data/facilities.json`.
+
+> `supabase/setup.sql` is not a complete fresh-project migration and must not
+> be run against production as a deployment step. It assumes existing tables
+> and needs to be replaced by a migration generated from the live schema.
+
+## Checks and deployment
+
+Run the same quality checks used by GitHub Actions:
+
+```bash
+npm run ci
+```
+
+After a production build, `npm run lighthouse` starts the built app and audits
+the `/nearby` and `/help` routes. Reports are written to `.lighthouseci/`.
+
+Deployment uses GitHub Actions for CI and Vercel for preview and production
+deployments. See [docs/deployment.md](docs/deployment.md) for environment
+configuration, branch protection, release checks, and rollback instructions.
 
 ## Folder structure
 

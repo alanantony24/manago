@@ -31,13 +31,17 @@ export default function FacilityMap({
   // without re-subscribing every time a parent re-renders.
   const onUserLocationRef = useRef(onUserLocation)
   const onFacilitySelectRef = useRef(onFacilitySelect)
-  onUserLocationRef.current = onUserLocation
-  onFacilitySelectRef.current = onFacilitySelect
+
+  useEffect(() => {
+    onUserLocationRef.current = onUserLocation
+    onFacilitySelectRef.current = onFacilitySelect
+  }, [onUserLocation, onFacilitySelect])
 
   // Create the map once, then try to center it on the user's location.
   useEffect(() => {
     if (!containerRef.current) return
 
+    const markers = markersRef.current
     const map = new mapboxgl.Map({
       accessToken: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN!,
       container: containerRef.current,
@@ -71,7 +75,7 @@ export default function FacilityMap({
     return () => {
       map.remove()
       mapRef.current = null
-      markersRef.current.clear()
+      markers.clear()
     }
   }, [])
 
@@ -95,10 +99,20 @@ export default function FacilityMap({
     for (const facility of facilities) {
       if (markers.has(facility.id)) continue
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-        facility.address
-          ? `<strong>${facility.name}</strong><br/><span style="font-size:12px">${facility.address}</span>`
-          : `<strong>${facility.name}</strong>`
+      const popupContent = document.createElement("div")
+      const popupName = document.createElement("strong")
+      popupName.textContent = facility.name
+      popupContent.append(popupName)
+
+      if (facility.address) {
+        const popupAddress = document.createElement("span")
+        popupAddress.className = "text-xs"
+        popupAddress.textContent = facility.address
+        popupContent.append(document.createElement("br"), popupAddress)
+      }
+
+      const popup = new mapboxgl.Popup({ offset: 25 }).setDOMContent(
+        popupContent
       )
 
       const marker = new mapboxgl.Marker({ color: MANAGO_BRAND_ORANGE })

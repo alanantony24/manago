@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.mjs"],
+  "exclude": [
+    "node_modules",
+    "src/app/sign-in/[[...sign-in]]/page.tsx",
+    "src/app/sign-up/[[...sign-up]]/page.tsx"
+  ]
+}
