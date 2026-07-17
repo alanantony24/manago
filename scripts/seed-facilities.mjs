@@ -43,7 +43,7 @@ function buildDescription(item) {
   return parts.length > 0 ? parts.join(" | ") : null
 }
 
-function statusFromQuality(_dataQuality) {
+function statusFromQuality() {
   return "active"
 }
 

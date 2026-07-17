@@ -15,12 +15,14 @@ export default async function Nearby() {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from("facilities")
-      .select("*, amenity_types(id, slug, label)")
+      .select(
+        "id, name, latitude, longitude, address, description, photo_url, is_accessible, is_verified, amenity_types(id, slug, label)"
+      )
 
     if (error) {
       console.error("Failed to load facilities:", error.message)
     } else if (data) {
-      facilities = data as Facility[] //store data as a list of facilities
+      facilities = data as unknown as Facility[] // Supabase types are not generated yet.
     }
   }
 

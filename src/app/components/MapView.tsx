@@ -135,7 +135,7 @@ export default function MapView({ userLocation, destination, destinationName, on
     };
 
     updateRoute();
-  }, [userLocation, destination]);
+  }, [userLocation, destination, destinationName]);
 
   return <div ref={mapContainer} className="w-full h-full" />;
 }

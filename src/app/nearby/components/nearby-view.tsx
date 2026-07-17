@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
+import dynamic from "next/dynamic"
 import {
   Search,
   LayoutGrid,
@@ -16,11 +17,22 @@ import {
 } from "@/components/ui/input-group"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import FacilityMap from "./map"
 import FacilityCard from "./facility-card"
 import { AppPageHeader } from "@/components/app-page-header"
 import type { Facility } from "@/types/facility"
 import { getDistanceKm } from "@/lib/geo"
+
+const FacilityMap = dynamic(() => import("./map"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex h-64 w-full items-center justify-center rounded-md bg-gray-100 text-sm text-gray-600"
+      role="status"
+    >
+      Loading map…
+    </div>
+  ),
+})
 
 type FilterKey = "all" | "water_cooler" | "toilet_with_bidet" | "nursing_room"
 
