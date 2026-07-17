@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import MapView from '@/app/components/MapView';
 import { AppPageHeader } from '@/components/app-page-header';
 import { getDistanceMeters } from '@/lib/geo';
@@ -20,7 +20,6 @@ export default function LocatePage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [nearestFacility, setNearestFacility] = useState<Facility | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [routeInfo, setRouteInfo] = useState<{
     direction: string;
@@ -33,9 +32,11 @@ export default function LocatePage() {
   // Watch user location continuously
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
-      setLoading(false);
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setLocationError('Geolocation is not supported by your browser.');
+        setLoading(false);
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -86,9 +87,8 @@ export default function LocatePage() {
     fetchFacilities();
   }, []);
 
-  // Recompute nearest facility locally whenever location or facility list changes
-  useEffect(() => {
-    if (!userLocation || facilities.length === 0) return;
+  const nearestResult = useMemo(() => {
+    if (!userLocation || facilities.length === 0) return null;
 
     const [userLng, userLat] = userLocation;
 
@@ -113,12 +113,13 @@ export default function LocatePage() {
       }
     }
 
-    setNearestFacility(closest);
-
-    if (closestDist <= ARRIVAL_THRESHOLD_M) {
-      setArrived(true);
-    }
+    return { facility: closest, distance: closestDist };
   }, [userLocation, facilities]);
+
+  const nearestFacility = nearestResult?.facility ?? null;
+  const hasArrived =
+    arrived ||
+    (nearestResult !== null && nearestResult.distance <= ARRIVAL_THRESHOLD_M);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-manago-navy">
@@ -173,7 +174,7 @@ export default function LocatePage() {
               onClick={() => setArrived(true)}
               className="w-full rounded-full bg-white py-3 text-sm font-semibold text-manago-teal hover:bg-manago-mint"
             >
-              {arrived ? "✅ You have arrived!" : "Arrived?"}
+              {hasArrived ? "✅ You have arrived!" : "Arrived?"}
             </button>
           </div>
         )}

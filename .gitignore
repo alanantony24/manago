@@ -25,6 +25,7 @@ yarn-error.log*
 .pnpm-debug.log*
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 # vercel
 .vercel
 # typescript
@@ -32,6 +33,9 @@ yarn-error.log*
 next-env.d.ts
 #drafts
 **/draft*.txt
+
+# local Lighthouse CI reports
+/.lighthouseci/
 
 # clerk configuration (can include secrets)
 /.clerk/
