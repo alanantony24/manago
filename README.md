@@ -22,8 +22,8 @@ distance-sorted list, so you can quickly find the closest one and get directions
 
 ## Getting started
 
-Use Node.js 20.9 or newer. This repository uses npm and `package-lock.json`;
-do not install from the stale pnpm lockfile.
+Use Node.js 22 or newer and npm 11. This repository uses npm and
+`package-lock.json`; do not introduce a second package-manager lockfile.
 
 1. Copy `.env.example` to `.env.local` and fill in the public Supabase and
    Mapbox values.

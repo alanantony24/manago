@@ -13,7 +13,7 @@ into a deployment automatically.
 ## Prerequisites
 
 - The GitHub repository is `alanantony24/manago`.
-- Use Node.js 20.9 or newer and npm. `package-lock.json` is the only lockfile.
+- Use Node.js 22 or newer and npm 11. `package-lock.json` is the only lockfile.
 - Continue using the existing Supabase project for the first release.
 - Obtain a Mapbox public token and restrict it to the deployed domains after
   Vercel assigns them.
