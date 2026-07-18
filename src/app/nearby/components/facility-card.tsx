@@ -1,11 +1,9 @@
 "use client"
 
 import { useTransitionRouter } from "next-view-transitions"
-import { MapPin, FileText, Star, Navigation, AlertTriangle } from "lucide-react"
+import { MapPin, FileText, Navigation, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  FacilityTagPill,
-} from "@/components/facility-tag-pill"
+import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { FacilityWithDistance } from "@/types/facility"
 import { formatDistance } from "@/lib/geo"
 import { getFacilityDataQuality, getFacilityNotes } from "@/lib/facility-helpers"
@@ -89,21 +87,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
           </div>
         )}
 
-        <div className="flex items-center gap-1.5">
-          <div className="flex">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star
-                key={i}
-                className={`size-3.5 ${
-                  i < 4
-                    ? "fill-manago-orange text-manago-orange"
-                    : "text-gray-300"
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-xs text-gray-500">No reviews yet</span>
-        </div>
+        <p className="text-xs text-gray-500">No reviews yet</p>
 
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

@@ -17,20 +17,18 @@ const INPUT =
 
 export default function AddFacilityPage() {
   const facilities = [
-    "Toilet w/ bidet",
-    "Toilet",
-    "Water Cooler",
-    "Nursing Home",
-    "Baby Changing",
+    "Toilet with bidet",
+    "Water cooler",
+    "Nursing room",
   ];
 
   const features = [
     "Bidet",
-    "Baby Changing",
-    "Wheelchair Accessible",
-    "Grab Bars",
+    "Baby changing",
+    "Wheelchair accessible",
+    "Grab bars",
     "Soap",
-    "Hand Dryer",
+    "Hand dryer",
   ];
 
   const [selected, setSelected] = useState<Record<string, boolean>>({});

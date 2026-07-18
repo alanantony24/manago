@@ -2,13 +2,15 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import dynamic from "next/dynamic"
+import { Link } from "next-view-transitions"
 import {
   Search,
   LayoutGrid,
   GlassWater,
   Toilet,
   Baby,
-  SlidersHorizontal,
+  ArrowDownWideNarrow,
+  Navigation,
 } from "lucide-react"
 import {
   InputGroup,
@@ -35,6 +37,7 @@ const FacilityMap = dynamic(() => import("./map"), {
 })
 
 type FilterKey = "all" | "water_cooler" | "toilet_with_bidet" | "nursing_room"
+type SortKey = "distance" | "name"
 
 const FILTERS: { key: FilterKey; label: string; icon: ReactNode }[] = [
   { key: "all", label: "All", icon: <LayoutGrid /> },
@@ -56,6 +59,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
     null
   )
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all")
+  const [sortKey, setSortKey] = useState<SortKey>("distance")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
     null
@@ -91,8 +95,18 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
 
         return { ...facility, distanceKm }
       })
-      .sort((a, b) => a.distanceKm - b.distanceKm)
-  }, [facilities, activeFilter, searchQuery, userLocation])
+      .sort((a, b) => {
+        if (sortKey === "name") {
+          return a.name.localeCompare(b.name)
+        }
+
+        return a.distanceKm - b.distanceKm
+      })
+  }, [facilities, activeFilter, searchQuery, userLocation, sortKey])
+
+  function toggleSort() {
+    setSortKey((current) => (current === "distance" ? "name" : "distance"))
+  }
 
   return (
     <div className="w-full max-w-full min-h-screen overflow-x-hidden bg-gray-50 text-manago-navy">
@@ -139,12 +153,41 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
           onFacilitySelect={setSelectedFacilityId}
         />
 
-        <div className="flex flex-row items-center justify-between">
+        <div className="flex flex-row flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-bold text-manago-navy">Nearby You</h3>
-          <Button className="bg-manago-teal text-white hover:bg-manago-teal-dark">
-            <SlidersHorizontal /> Sort
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="bg-manago-teal text-white hover:bg-manago-teal-dark"
+              onClick={toggleSort}
+              aria-label={
+                sortKey === "distance"
+                  ? "Currently sorted by distance. Switch to name."
+                  : "Currently sorted by name. Switch to distance."
+              }
+            >
+              <ArrowDownWideNarrow />
+              {sortKey === "distance" ? "Distance" : "Name"}
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
+            >
+              <Link href="/locate">
+                <Navigation />
+                Locate
+              </Link>
+            </Button>
+          </div>
         </div>
+
+        {!userLocation && sortKey === "distance" && (
+          <p className="text-xs text-gray-500">
+            Allow location access to sort by distance. Until then, results keep
+            the database order.
+          </p>
+        )}
 
         <div className="flex w-full min-w-0 flex-col gap-4">
           {filteredFacilities.length === 0 ? (
