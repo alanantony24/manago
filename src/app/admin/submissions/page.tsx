@@ -25,9 +25,7 @@ type Submission = {
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
-  useEffect(() => {
-    loadSubmissions();
-  }, []);
+  
 
 
   async function approveSubmission(submission: Submission) {
@@ -102,6 +100,10 @@ async function rejectSubmission(id: number) {
 
     setSubmissions(data ?? []);
   }
+
+  useEffect(() => {
+    loadSubmissions();
+  }, []);
 
   return (
     <main className="mx-auto max-w-4xl p-6">
