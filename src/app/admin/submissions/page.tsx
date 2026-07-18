@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Submission = {
@@ -25,7 +25,25 @@ type Submission = {
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
-  
+  const loadSubmissions = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("facility_submissions")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setSubmissions(data ?? []);
+  }, []);
+
+  useEffect(() => {
+    loadSubmissions();
+  }, [loadSubmissions]);
+
 
 
   async function approveSubmission(submission: Submission) {
@@ -86,24 +104,7 @@ async function rejectSubmission(id: number) {
     prev.filter((item) => item.id !== id)
   );
 }
-  async function loadSubmissions() {
-    const { data, error } = await supabase
-      .from("facility_submissions")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setSubmissions(data ?? []);
-  }
-
-  useEffect(() => {
-    loadSubmissions();
-  }, []);
 
   return (
     <main className="mx-auto max-w-4xl p-6">
