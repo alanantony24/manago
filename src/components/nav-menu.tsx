@@ -13,8 +13,10 @@ import { Link } from "next-view-transitions"
 import {
   CircleHelp,
   Home,
+  Navigation,
   PlusCircle,
   Star,
+  UserRound,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -48,8 +50,10 @@ const NAV_ITEMS: {
   icon: LucideIcon
 }[] = [
   { href: "/nearby", label: "Home", icon: Home },
+  { href: "/locate", label: "Locate", icon: Navigation },
   { href: "/add", label: "Contribute", icon: PlusCircle },
   { href: "/review", label: "Review", icon: Star },
+  { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/help", label: "Help", icon: CircleHelp },
 ]
 

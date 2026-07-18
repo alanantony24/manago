@@ -174,7 +174,7 @@ export default function LocatePage() {
               onClick={() => setArrived(true)}
               className="w-full rounded-full bg-white py-3 text-sm font-semibold text-manago-teal hover:bg-manago-mint"
             >
-              {hasArrived ? "✅ You have arrived!" : "Arrived?"}
+              {hasArrived ? "You have arrived!" : "Arrived?"}
             </button>
           </div>
         )}

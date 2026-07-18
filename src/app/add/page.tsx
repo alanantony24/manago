@@ -32,11 +32,11 @@ export default function AddFacilityPage() {
 
   const features = [
     "Bidet",
-    "Baby Changing",
-    "Wheelchair Accessible",
-    "Grab Bars",
+    "Baby changing",
+    "Wheelchair accessible",
+    "Grab bars",
     "Soap",
-    "Hand Dryer",
+    "Hand dryer",
   ];
 
   const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(null);
