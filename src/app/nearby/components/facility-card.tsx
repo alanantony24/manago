@@ -23,7 +23,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
   if (facility.is_accessible) tags.push("PWD Friendly")
   if (facility.is_verified) tags.push("Verified")
 
-  const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
+  const navigateUrl = `/locate?facilityId=${facility.id}`
 
   return (
     <article
@@ -101,7 +101,7 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
           className="h-9 w-full rounded-lg bg-manago-teal text-white hover:bg-manago-teal-dark sm:w-fit sm:px-5"
           onClick={(e) => {
             e.stopPropagation()
-            window.open(navigateUrl, "_blank", "noopener,noreferrer")
+            router.push(navigateUrl)
           }}
         >
           <Navigation className="size-4" />
