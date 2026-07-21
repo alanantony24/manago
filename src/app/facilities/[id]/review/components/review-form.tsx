@@ -140,7 +140,7 @@ export default function ReviewForm({
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                       selected
-                        ? "border-cyan-600 bg-cyan-50 text-cyan-700"
+                        ? "border-manago-teal bg-manago-teal/10 text-manago-teal"
                         : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                     )}
                   >
@@ -169,12 +169,12 @@ export default function ReviewForm({
             </p>
           )}
 
-          <div className="mt-5 rounded-xl bg-cyan-50 p-3 text-center text-sm text-cyan-900">
+          <div className="mt-5 rounded-xl bg-manago-notice p-3 text-center text-sm text-manago-notice-text">
             Reviews are checked by our team before going live.
           </div>
 
           <Button
-            className="mt-5 h-12 w-full rounded-xl bg-cyan-600 text-white hover:bg-cyan-700"
+            className="mt-5 h-12 w-full rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
             onClick={handleSubmit}
             disabled={submitting}
           >
