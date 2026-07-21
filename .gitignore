@@ -25,10 +25,17 @@ yarn-error.log*
 .pnpm-debug.log*
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 # vercel
 .vercel
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-#draft
-draft.txt
+#drafts
+**/draft*.txt
+
+# local Lighthouse CI reports
+/.lighthouseci/
+
+# clerk configuration (can include secrets)
+/.clerk/

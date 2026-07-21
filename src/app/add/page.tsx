@@ -1,95 +1,141 @@
 'use client';
 
-import { useState } from "react";
-import Navbar from "../../components/Navbar";
-import { supabase } from "../../lib/supabase";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LocateFixed } from "lucide-react";
+import { AppPageHeader } from "@/components/app-page-header";
+import { supabase } from "@/lib/supabase";
 
 const CARD =
-  "bg-white rounded-2xl shadow-md p-5 m-4";
+  "m-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm";
 
 const BUTTON =
-  "px-4 py-2 rounded-xl border transition-colors";
+  "rounded-xl border px-4 py-2 text-sm font-medium text-manago-navy transition-colors";
 
-export default function Location() {
-  const facilities = [
-    "Toilet w/ bidet",
-    "Toilet",
-    "Water Cooler",
-    "Nursing Home",
-    "Baby Changing",
-  ];
+const SECTION_TITLE = "mb-4 text-xl font-bold text-manago-navy";
 
-  const features = [
-    "Bidet",
-    "Baby Changing",
-    "Wheelchair Accessible",
-    "Grab Bars",
-    "Soap",
-    "Hand Dryer",
-  ];
+const INPUT =
+  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-manago-navy placeholder:text-gray-500 focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
 
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [selectedFeatures, setSelectedFeatures] =
-    useState<Record<string, boolean>>({});
+type MapboxSuggestion = {
+  id: string;
+  place_name: string;
+  center: [number, number];
+};
 
-  // const [location, setLocation] = useState("");
+export default function AddFacilityPage() {
+  type AmenityType = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+};
+
+type FeatureType = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+};
+
+  const [features, setFeatures] = useState<FeatureType[]>([]);
+  const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(null);
+  const [facilities, setFacilities] = useState<AmenityType[]>([]);
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<number[]>([]);
   const [is24Hours, setIs24Hours] = useState(false);
   const [openTime, setOpenTime] = useState("");
   const [closeTime, setCloseTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const preview = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
 
   const [locationQuery, setLocationQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [exactLocation, setExactLocation] = useState("");
+
+  const [facilityName, setFacilityName] = useState("");
+const [buildingName, setBuildingName] = useState("");
+const [description, setDescription] = useState("");
+const [isAccessible, setIsAccessible] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
+  const [floor, setFloor] = useState("");
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("");
 
 
   const [errors, setErrors] = useState({
     facility: "",
     location: "",
-    exactLocation: "",
+    floor: "",
     openingHours: "",
     image: "",
   });
 
-  const toggleButton = (facility: string) => {
-    setSelected(prev => ({
-      ...prev,
-      [facility]: !prev[facility],
-    }));
-  };
 
-  const toggleFeature = (feature: string) => {
-    setSelectedFeatures(prev => ({
-      ...prev,
-      [feature]: !prev[feature],
-    }));
-  };
+  const toggleFeature = (id: number) => {
+  setSelectedFeatureIds((prev) =>
+    prev.includes(id)
+      ? prev.filter((featureId) => featureId !== id)
+      : [...prev, id]
+  );
+};
 
   const toggle24Hours = () => {
     setIs24Hours(prev => !prev);
   };
 
   useEffect(() => {
-    if (!image) {
-      setPreview(null);
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  useEffect(() => {
+  async function loadAmenityTypes() {
+    const { data, error } = await supabase
+      .from("amenity_types")
+      .select("id, slug, label, icon")
+      .order("label");
+
+    if (error) {
+      console.error(error);
       return;
     }
 
-    const objectUrl = URL.createObjectURL(image);
-    setPreview(objectUrl);
+    setFacilities(data);
+  }
 
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [image]);
+  async function loadFeatureTypes() {
+  const { data, error } = await supabase
+    .from("feature_types")
+    .select("id, slug, label, icon")
+    .order("label");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  setFeatures(data ?? []);
+  console.log(data);
+}
+
+  loadAmenityTypes();
+  loadFeatureTypes();
+}, []);
+
 
 
   async function searchLocation(query: string) {
     setLocationQuery(query);
+    setLocationStatus("");
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
 
     if (query.length < 3) {
       setSuggestions([]);
@@ -107,44 +153,87 @@ export default function Location() {
     setSuggestions(data.features ?? []);
   }
 
+  function handleUseCurrentLocation() {
+    setLocationStatus("");
+
+    if (!navigator.geolocation) {
+      setLocationStatus("Current location is not supported by this browser.");
+      return;
+    }
+
+    setIsLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setIsUsingCurrentLocation(true);
+        setSuggestions([]);
+        setErrors((prev) => ({ ...prev, location: "" }));
+        setLocationStatus(
+          "Current location pinned. Type the place name in the field above."
+        );
+        setIsLocating(false);
+      },
+      () => {
+        setLocationStatus(
+          "Unable to get your current location. Please allow location access and try again."
+        );
+        setIsLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }
+
+  function handleSearchInstead() {
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
+    setSuggestions([]);
+    setLocationStatus("Search mode enabled. Choose a location from the dropdown.");
+  }
+
   async function handleSubmit() {
 
     // clear previous errors
     setErrors({
       facility: "",
       location: "",
-      exactLocation: "",
+      floor: "",
       openingHours: "",
       image: "",
     });
 
-    const selectedFacilities = Object.keys(selected).filter(
-      (key) => selected[key]
-    );
-
-    const selectedFeatureList = Object.keys(selectedFeatures).filter(
-      (key) => selectedFeatures[key]
-    );
 
     // validation
     const newErrors = {
       facility: "",
       location: "",
-      exactLocation: "",
+      floor: "",
       openingHours: "",
       image: "",
     };
 
-    if (selectedFacilities.length === 0) {
+    if (selectedAmenityId === null) {
       newErrors.facility = "Please select at least one facility type.";
     }
 
+    if (!facilityName.trim()) {
+  alert("Please enter a facility name.");
+  return;
+}
+
     if (!locationQuery.trim() || latitude === null || longitude === null) {
-      newErrors.location = "Please select a location from the suggestions.";
+      newErrors.location =
+        "Please select a location from the suggestions or use your current location pin.";
     }
 
-    if (!exactLocation.trim()) {
-      newErrors.exactLocation = "Please enter the floor or exact location.";
+    if (!floor.trim()) {
+      newErrors.floor = "Please enter the floor.";
     }
 
     if (!is24Hours && (!openTime || !closeTime)) {
@@ -158,7 +247,7 @@ export default function Location() {
     if (
       newErrors.facility ||
       newErrors.location ||
-      newErrors.exactLocation ||
+      newErrors.floor ||
       newErrors.openingHours ||
       newErrors.image
     ) {
@@ -190,19 +279,23 @@ export default function Location() {
 
       // Save to Supabase
       const { error } = await supabase
-        .from("add_new_facility")
+        .from("facility_submissions")
         .insert([
           {
-            location: locationQuery,
-            exact_location: exactLocation,
-            latitude,
-            longitude,
-            facility_type: selectedFacilities,
-            features: selectedFeatureList,
-            open_time: is24Hours ? null : openTime,
-            close_time: is24Hours ? null : closeTime,
-            is_24_hours: is24Hours,
-            image_url: imageUrl,
+            name: facilityName,
+  amenity_type_id: selectedAmenityId,
+  latitude,
+  longitude,
+  address: locationQuery,
+  building_name: buildingName,
+  floor,
+  description,
+  photo_url: imageUrl,
+  open_time: is24Hours ? null : openTime,
+  close_time: is24Hours ? null : closeTime,
+  is_24_hours: is24Hours,
+  is_accessible: isAccessible,
+  feature_ids: selectedFeatureIds,
           },
         ]);
 
@@ -211,20 +304,21 @@ export default function Location() {
       alert("Submission successful!");
 
       // Reset form
-      setSelected({});
-      setSelectedFeatures({});
+      setSelectedAmenityId(null);
+      setSelectedFeatureIds([]);
       setLocationQuery("");
-      setExactLocation("");
+      setFloor("");
       setLatitude(null);
       setLongitude(null);
+      setIsUsingCurrentLocation(false);
       setSuggestions([]);
+      setLocationStatus("");
 
       setOpenTime("");
       setCloseTime("");
       setIs24Hours(false);
 
       setImage(null);
-      setPreview(null);
 
     } catch (err) {
       console.error(err);
@@ -240,72 +334,158 @@ export default function Location() {
     }
   }
   return (
-    <main className="min-h-screen bg-gray-100 pb-8">
-      <Navbar />
+    <main className="min-h-screen bg-gray-50 pb-8 text-manago-navy">
+      <AppPageHeader subtitle="Add a Facility" />
 
       {/* Facility Type */}
+
+
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
+  <h2 className={SECTION_TITLE}>
+    Facility Name
+    <span className="ml-1 text-red-500">*</span>
+  </h2>
+
+  <input
+    className={INPUT}
+    placeholder="e.g. City Square Mall Toilet"
+    value={facilityName}
+    onChange={(e) => setFacilityName(e.target.value)}
+  />
+
+  <input
+  className={`mt-3 ${INPUT}`}
+  placeholder="Building name (optional)"
+  value={buildingName}
+  onChange={(e) => setBuildingName(e.target.value)}
+/>
+
+<textarea
+  className={`mt-3 ${INPUT}`}
+  placeholder="Description (optional)"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+/>
+</section>
+
+      <section className={CARD}>
+        <h2 className={SECTION_TITLE}>
           Facility Type
           <span className="ml-1 text-red-500">*</span>
         </h2>
 
         {errors.facility && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.facility}
-          </p>
+          <p className="mb-3 text-sm text-red-600">{errors.facility}</p>
         )}
         <div className="flex flex-wrap gap-3">
-          {facilities.map(facility => (
-            <button
-              key={facility}
-              type="button"
-              onClick={() => toggleButton(facility)}
-              className={`${BUTTON} ${selected[facility]
-                ? "bg-[#A3C793] border-[#0B7F7F]"
-                : "bg-white border-gray-300"
-                }`}
-            >
-              {facility}
-            </button>
-          ))}
+          {facilities.map((facility) => (
+  <button
+    key={facility.id}
+    type="button"
+    onClick={() => setSelectedAmenityId(
+    selectedAmenityId === facility.id ? null : facility.id
+  )
+}
+    className={`${BUTTON} ${
+      selectedAmenityId === facility.id
+        ? "border-manago-teal-dark bg-manago-chip"
+        : "border-gray-500 bg-white hover:border-manago-teal"
+    }`}
+  >
+    {facility.label}
+  </button>
+))}
         </div>
       </section>
 
       {/* Location */}
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
+        <h2 className={SECTION_TITLE}>
           Location
           <span className="ml-1 text-red-500">*</span>
         </h2>
-        <p className="">eg. City Square Mall Level 2 Toilet</p>
+        <p className="mb-3 text-sm text-gray-600">
+          eg. City Square Mall Level 2 Toilet
+        </p>
 
         {errors.location && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.location}
-          </p>
+          <p className="mb-2 text-sm text-red-600">{errors.location}</p>
         )}
         <input
           type="text"
-          placeholder="Search for a location"
+          aria-label={
+            isUsingCurrentLocation ? "Place name" : "Search for a location"
+          }
+          placeholder={
+            isUsingCurrentLocation
+              ? "Type the place name"
+              : "Search for a location"
+          }
           value={locationQuery}
-          onChange={(e) => searchLocation(e.target.value)}
-          className="w-full rounded-xl border border-gray-300 px-4 py-3"
+          onChange={(e) => {
+            if (isUsingCurrentLocation) {
+              setLocationQuery(e.target.value);
+              return;
+            }
 
+            searchLocation(e.target.value);
+          }}
+          className={INPUT}
         />
 
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          disabled={isLocating}
+          className={`${BUTTON} mt-3 flex w-full items-center justify-center gap-2 disabled:opacity-60 ${
+            isUsingCurrentLocation
+              ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+              : "border-manago-teal-dark bg-manago-chip"
+          }`}
+          title="Use your current location for latitude and longitude"
+        >
+          <LocateFixed className="size-4" aria-hidden />
+          {isLocating
+            ? "Getting current location..."
+            : isUsingCurrentLocation
+              ? "Current location pinned"
+              : "Use current location pin"}
+        </button>
+
+        {isUsingCurrentLocation && (
+          <button
+            type="button"
+            onClick={handleSearchInstead}
+            className={`${BUTTON} mt-2 w-full border-gray-500 bg-white hover:border-manago-teal`}
+          >
+            Search for location instead
+          </button>
+        )}
+
+        {locationStatus && (
+          <p className="mt-2 text-sm text-gray-600">{locationStatus}</p>
+        )}
+
+        {latitude !== null && longitude !== null && (
+          <p className="mt-2 text-xs text-gray-500">
+            Coordinates set: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+          </p>
+        )}
+
         {suggestions.length > 0 && (
-          <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow">
-            {suggestions.map((place: any) => (
+          <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow-sm">
+            {suggestions.map((place) => (
               <button
                 key={place.id}
                 type="button"
-                className="block w-full px-4 py-3 text-left hover:bg-gray-100"
+                className="block w-full px-4 py-3 text-left text-manago-navy hover:bg-gray-50"
                 onClick={() => {
                   setLocationQuery(place.place_name);
                   setLatitude(place.center[1]);
                   setLongitude(place.center[0]);
+                  setIsUsingCurrentLocation(false);
                   setSuggestions([]);
+                  setLocationStatus("Location selected from suggestions.");
                 }}
               >
                 {place.place_name}
@@ -314,123 +494,105 @@ export default function Location() {
           </div>
         )}
 
-        {errors.exactLocation && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.exactLocation}
-          </p>
+        {errors.floor && (
+          <p className="mt-2 text-sm text-red-600">{errors.floor}</p>
         )}
         <input
           type="text"
           placeholder="Floor / Exact area (e.g. Level 2 beside KFC)"
-          value={exactLocation}
-          onChange={(e) => setExactLocation(e.target.value)}
-          className="mt-3 w-full rounded-xl border border-gray-300 px-4 py-3"
+          value={floor}
+          onChange={(e) => setFloor(e.target.value)}
+          className={`mt-3 ${INPUT}`}
         />
       </section>
 
-
-
       {/* Opening Hours */}
       <div className={CARD}>
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Opening Hours</h2>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-manago-navy">Opening Hours</h2>
 
           <button
             type="button"
             onClick={toggle24Hours}
-            className={`px-4 py-2 rounded-xl border ${is24Hours
-              ? "bg-[#0B7F7F] text-white border-[#0B7F7F]"
-              : "bg-white border-gray-300"
-              }`}
+            className={`${BUTTON} ${
+              is24Hours
+                ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+                : "border-gray-500 bg-white hover:border-manago-teal"
+            }`}
           >
             24 Hours
           </button>
-
-
         </div>
-
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-600">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Opens
             </label>
-
             <input
               type="time"
               value={openTime}
               onChange={(e) => setOpenTime(e.target.value)}
               disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 transition
-        ${is24Hours
-                  ? "cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "border-gray-300 bg-white focus:border-[#0B7F7F] focus:outline-none"
-                }`}
+              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
+                is24Hours
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
+              }`}
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-600">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Closes
             </label>
-
             <input
               type="time"
               value={closeTime}
               onChange={(e) => setCloseTime(e.target.value)}
               disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 transition
-        ${is24Hours
-                  ? "cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "border-gray-300 bg-white focus:border-[#0B7F7F] focus:outline-none"
-                }`}
+              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
+                is24Hours
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
+              }`}
             />
           </div>
         </div>
 
         {errors.openingHours && (
-            <p className="mt-2 text-sm text-red-500">
-              {errors.openingHours}
-            </p>
-          )}
+          <p className="mt-2 text-sm text-red-600">{errors.openingHours}</p>
+        )}
       </div>
 
       {/* Photo Upload */}
       <section className={CARD}>
-        <h2 className="mb-4 text-xl font-bold">
-          Photo Upload
-        </h2>
+        <h2 className={SECTION_TITLE}>Photo Upload</h2>
 
-        <label className="flex cursor-pointer flex-col items-center justify-center 
-        rounded-2xl border-2 border-dashed border-gray-300 py-10 transition hover:border-[#0B7F7F] hover:bg-gray-50">
-          <span className="text-5xl">📷</span>
-
-          <span className="mt-3 text-gray-500">
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-400 py-10 transition hover:border-manago-teal-dark hover:bg-manago-mint/30">
+          <span className="text-5xl" aria-hidden>
+            📷
+          </span>
+          <span className="mt-3 text-sm font-medium text-gray-600">
             Tap to add a photo
           </span>
-
           <input
             type="file"
             accept="image/*"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-
               if (!file) return;
-
               setImage(file);
-              setPreview(URL.createObjectURL(file));
             }}
           />
         </label>
 
         {errors.image && (
-          <p className="mt-2 text-sm text-red-500">
-            {errors.image}
-          </p>
+          <p className="mt-2 text-sm text-red-600">{errors.image}</p>
         )}
         {image && (
-          <p className="mt-3 text-sm text-green-600">
+          <p className="mt-3 text-sm font-medium text-manago-teal-dark">
             ✓ {image.name}
           </p>
         )}
@@ -440,40 +602,53 @@ export default function Location() {
             <img
               src={preview}
               alt="Selected image preview"
-              className="h-48 w-full rounded-xl border object-cover"
+              className="h-48 w-full rounded-xl border border-gray-200 object-cover"
             />
           </div>
         )}
       </section>
 
+      {/*accessible*/}
+
+      <section className={CARD}>
+  <label className="flex items-center gap-3">
+    <input
+      type="checkbox"
+      checked={isAccessible}
+      onChange={(e) => setIsAccessible(e.target.checked)}
+    />
+
+    <span>Wheelchair Accessible</span>
+  </label>
+</section>
+
       {/* Features */}
       <section className={CARD}>
         <h2 className="mb-4 flex items-baseline gap-2">
-  <span className="text-xl font-bold">Features</span>
-  <span className="text-sm font-normal text-gray-500">
-    (Optional)
-  </span>
-</h2>
+          <span className="text-xl font-bold text-manago-navy">Features</span>
+          <span className="text-sm font-normal text-gray-500">(Optional)</span>
+        </h2>
         <div className="flex flex-wrap gap-3">
-          {features.map(feature => (
+          {features.map((feature) => (
             <button
-              key={feature}
-              type="button"
-              onClick={() => toggleFeature(feature)}
-              className={`${BUTTON} ${selectedFeatures[feature]
-                ? "bg-[#A3C793] border-[#0B7F7F]"
-                : "bg-white border-gray-300"
-                }`}
-            >
-              {feature}
-            </button>
+    key={feature.id}
+    type="button"
+    onClick={() => toggleFeature(feature.id)}
+    className={`${BUTTON} ${
+      selectedFeatureIds.includes(feature.id)
+        ? "border-manago-teal-dark bg-manago-chip"
+        : "border-gray-500 bg-white hover:border-manago-teal"
+    }`}
+  >
+    {feature.label}
+  </button>
           ))}
         </div>
       </section>
 
       {/* Notice */}
-      <section className="mx-4 rounded-2xl bg-[#CBF0ED] p-5">
-        <p className="text-center text-[#084F4F]">
+      <section className="mx-4 rounded-2xl bg-manago-notice p-5">
+        <p className="text-center text-sm font-medium text-manago-notice-text">
           Every submission is reviewed by our team before going live.
         </p>
       </section>
@@ -484,7 +659,7 @@ export default function Location() {
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="rounded-2xl bg-[#0B7F7F] px-10 py-4 font-semibold text-white disabled:opacity-60"
+          className="rounded-2xl bg-manago-teal-dark px-10 py-4 font-semibold text-white disabled:opacity-60"
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>

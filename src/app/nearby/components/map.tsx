@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
+import { MANAGO_BRAND_ORANGE, MANAGO_TEAL } from "@/lib/brand-colors"
 import type { Facility } from "@/types/facility"
 
 // Singapore city center. Used until we know where the user actually is.
@@ -30,12 +31,21 @@ export default function FacilityMap({
   // without re-subscribing every time a parent re-renders.
   const onUserLocationRef = useRef(onUserLocation)
   const onFacilitySelectRef = useRef(onFacilitySelect)
-  onUserLocationRef.current = onUserLocation
-  onFacilitySelectRef.current = onFacilitySelect
 
   // Create the map once, then try to center it on the user's location.
   useEffect(() => {
+    onUserLocationRef.current = onUserLocation
+    onFacilitySelectRef.current = onFacilitySelect
+  }, [onUserLocation, onFacilitySelect])
+
+  useEffect(() => {
     if (!containerRef.current) return
+
+    const markers = markersRef.current
+    // Flips to true once this effect's cleanup runs (unmount, or a fast
+    // remount under Strict Mode). Guards against the async geolocation
+    // callback trying to touch a map that's already been torn down.
+    let cancelled = false
 
     const map = new mapboxgl.Map({
       accessToken: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN!,
@@ -51,12 +61,14 @@ export default function FacilityMap({
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (cancelled) return
+
           const coords: [number, number] = [
             position.coords.longitude,
             position.coords.latitude,
           ]
 
-          new mapboxgl.Marker({ color: "#0891b2" }).setLngLat(coords).addTo(map)
+          new mapboxgl.Marker({ color: MANAGO_TEAL }).setLngLat(coords).addTo(map)
           map.flyTo({ center: coords, zoom: NEARBY_ZOOM })
           onUserLocationRef.current?.(coords)
         },
@@ -68,9 +80,10 @@ export default function FacilityMap({
     })
 
     return () => {
+      cancelled = true
       map.remove()
       mapRef.current = null
-      markersRef.current.clear()
+      markers.clear()
     }
   }, [])
 
@@ -94,13 +107,23 @@ export default function FacilityMap({
     for (const facility of facilities) {
       if (markers.has(facility.id)) continue
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-        facility.address
-          ? `<strong>${facility.name}</strong><br/><span style="font-size:12px">${facility.address}</span>`
-          : `<strong>${facility.name}</strong>`
+      const popupContent = document.createElement("div")
+      const popupName = document.createElement("strong")
+      popupName.textContent = facility.name
+      popupContent.append(popupName)
+
+      if (facility.address) {
+        const popupAddress = document.createElement("span")
+        popupAddress.className = "text-xs"
+        popupAddress.textContent = facility.address
+        popupContent.append(document.createElement("br"), popupAddress)
+      }
+
+      const popup = new mapboxgl.Popup({ offset: 25 }).setDOMContent(
+        popupContent
       )
 
-      const marker = new mapboxgl.Marker({ color: "#eab308" })
+      const marker = new mapboxgl.Marker({ color: MANAGO_BRAND_ORANGE })
         .setLngLat([facility.longitude, facility.latitude])
         .setPopup(popup)
         .addTo(map)

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ericaOne } from "@/lib/fonts";
+import { AuthRedirectFix } from "@/components/auth-redirect-fix";
+import { NavMenuProvider } from "@/components/nav-menu";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -17,9 +20,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}>
-      <body className="min-h-full flex flex-col">
-        <ViewTransitions>{children}</ViewTransitions>
+    <html
+      lang="en"
+      className={`light h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}
+      style={{ colorScheme: "light" }}
+    >
+      <body className="flex min-h-full flex-col bg-gray-50 text-manago-navy">
+        <ClerkProvider
+          signInForceRedirectUrl="/nearby"
+          signUpForceRedirectUrl="/nearby"
+        >
+          <AuthRedirectFix />
+          <ViewTransitions>
+            <NavMenuProvider>{children}</NavMenuProvider>
+          </ViewTransitions>
+        </ClerkProvider>
       </body>
     </html>
   );

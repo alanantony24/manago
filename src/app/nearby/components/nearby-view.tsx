@@ -1,13 +1,16 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
+import dynamic from "next/dynamic"
+import { Link } from "next-view-transitions"
 import {
   Search,
   LayoutGrid,
   GlassWater,
   Toilet,
   Baby,
-  SlidersHorizontal,
+  ArrowDownWideNarrow,
+  Navigation,
 } from "lucide-react"
 import {
   InputGroup,
@@ -16,13 +19,25 @@ import {
 } from "@/components/ui/input-group"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import FacilityMap from "./map"
 import FacilityCard from "./facility-card"
-import BrandLogo from "@/components/brand-logo"
+import { AppPageHeader } from "@/components/app-page-header"
 import type { Facility } from "@/types/facility"
 import { getDistanceKm } from "@/lib/geo"
 
+const FacilityMap = dynamic(() => import("./map"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex h-64 w-full items-center justify-center rounded-md bg-gray-100 text-sm text-gray-600"
+      role="status"
+    >
+      Loading map…
+    </div>
+  ),
+})
+
 type FilterKey = "all" | "water_cooler" | "toilet_with_bidet" | "nursing_room"
+type SortKey = "distance" | "name"
 
 const FILTERS: { key: FilterKey; label: string; icon: ReactNode }[] = [
   { key: "all", label: "All", icon: <LayoutGrid /> },
@@ -44,6 +59,7 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
     null
   )
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all")
+  const [sortKey, setSortKey] = useState<SortKey>("distance")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
     null
@@ -79,31 +95,37 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
 
         return { ...facility, distanceKm }
       })
-      .sort((a, b) => a.distanceKm - b.distanceKm)
-  }, [facilities, activeFilter, searchQuery, userLocation])
+      .sort((a, b) => {
+        if (sortKey === "name") {
+          return a.name.localeCompare(b.name)
+        }
+
+        return a.distanceKm - b.distanceKm
+      })
+  }, [facilities, activeFilter, searchQuery, userLocation, sortKey])
+
+  function toggleSort() {
+    setSortKey((current) => (current === "distance" ? "name" : "distance"))
+  }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
-      <div className="w-full bg-[#007979] flex flex-col gap-2.5 rounded-b-[1.25rem] px-4 pb-6 pt-5 sm:gap-3 sm:rounded-b-3xl sm:pb-7 sm:pt-6">
-        <div className="flex items-center justify-center">
-          <BrandLogo />
-        </div>
-
+    <div className="w-full max-w-full min-h-screen overflow-x-hidden bg-gray-50 text-manago-navy">
+      <AppPageHeader>
         <InputGroup className="h-10 w-full rounded-full border-0 bg-white shadow-sm sm:h-11">
-          <InputGroupAddon className="pl-3.5 text-gray-400 sm:pl-4">
+          <InputGroupAddon className="pl-3.5 text-gray-500 sm:pl-4">
             <Search className="size-4 sm:size-[1.125rem]" />
           </InputGroupAddon>
           <InputGroupInput
-            className="text-sm placeholder:text-gray-400 sm:text-base"
+            className="text-sm text-manago-navy placeholder:text-gray-500 sm:text-base"
             placeholder="What are you looking for?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </InputGroup>
-      </div>
+      </AppPageHeader>
 
-      <div className="flex flex-col w-full max-w-full gap-4 p-4">
-        <ScrollArea className="w-full rounded-md whitespace-nowrap">
+      <div className="flex w-full max-w-full flex-col gap-4 p-4">
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
           <div className="flex flex-row gap-3">
             {FILTERS.map(({ key, label, icon }) => (
               <Button
@@ -112,8 +134,8 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
                 size="lg"
                 className={
                   activeFilter === key
-                    ? "bg-cyan-600 text-white border-cyan-600"
-                    : undefined
+                    ? "border-manago-teal bg-manago-teal text-white hover:bg-manago-teal-dark hover:text-white"
+                    : "border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
                 }
                 onClick={() => setActiveFilter(key)}
               >
@@ -131,16 +153,45 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
           onFacilitySelect={setSelectedFacilityId}
         />
 
-        <div className="flex flex-row items-center justify-between">
-          <h3 className="font-bold">Nearby You</h3>
-          <Button variant="outline" className="bg-cyan-600 text-white">
-            <SlidersHorizontal /> Sort
-          </Button>
+        <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-bold text-manago-navy">Nearby You</h3>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="bg-manago-teal text-white hover:bg-manago-teal-dark"
+              onClick={toggleSort}
+              aria-label={
+                sortKey === "distance"
+                  ? "Currently sorted by distance. Switch to name."
+                  : "Currently sorted by name. Switch to distance."
+              }
+            >
+              <ArrowDownWideNarrow />
+              {sortKey === "distance" ? "Distance" : "Name"}
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
+            >
+              <Link href="/locate">
+                <Navigation />
+                Locate
+              </Link>
+            </Button>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-4 w-full min-w-0">
+        {!userLocation && sortKey === "distance" && (
+          <p className="text-xs text-gray-500">
+            Allow location access to sort by distance. Until then, results keep
+            the database order.
+          </p>
+        )}
+
+        <div className="flex w-full min-w-0 flex-col gap-4">
           {filteredFacilities.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-8">
+            <p className="py-8 text-center text-sm text-gray-600">
               {facilities.length === 0
                 ? "No facilities loaded yet. Seed your Supabase database to see amenities here."
                 : "No facilities match your search or filter."}
