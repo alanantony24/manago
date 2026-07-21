@@ -12,9 +12,10 @@ export default function ReviewPage() {
         >
           Reviews coming soon
         </h2>
-        <p className="mt-3 text-base text-gray-600">
-          Browse facilities on the map and leave reviews from their detail
-          pages.
+        <p className="mt-3 text-base leading-relaxed text-gray-600">
+          Browse facilities on Home or Locate for now. Review writing will open
+          after the reviews feature is finished, and facility pages already
+          show an honest empty state instead of placeholder ratings.
         </p>
       </div>
     </main>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { AppPageHeader } from "@/components/app-page-header";
 import { supabase } from "@/lib/supabase";
 
@@ -15,83 +16,126 @@ const SECTION_TITLE = "mb-4 text-xl font-bold text-manago-navy";
 const INPUT =
   "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-manago-navy placeholder:text-gray-500 focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
 
+type MapboxSuggestion = {
+  id: string;
+  place_name: string;
+  center: [number, number];
+};
+
 export default function AddFacilityPage() {
-  const facilities = [
-    "Toilet w/ bidet",
-    "Toilet",
-    "Water Cooler",
-    "Nursing Home",
-    "Baby Changing",
-  ];
+  type AmenityType = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+};
 
-  const features = [
-    "Bidet",
-    "Baby Changing",
-    "Wheelchair Accessible",
-    "Grab Bars",
-    "Soap",
-    "Hand Dryer",
-  ];
+type FeatureType = {
+  id: number;
+  slug: string;
+  label: string;
+  icon: string | null;
+};
 
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [selectedFeatures, setSelectedFeatures] =
-    useState<Record<string, boolean>>({});
+  const [features, setFeatures] = useState<FeatureType[]>([]);
+  const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(null);
+  const [facilities, setFacilities] = useState<AmenityType[]>([]);
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<number[]>([]);
   const [is24Hours, setIs24Hours] = useState(false);
   const [openTime, setOpenTime] = useState("");
   const [closeTime, setCloseTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const preview = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
 
   const [locationQuery, setLocationQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [exactLocation, setExactLocation] = useState("");
+
+  const [facilityName, setFacilityName] = useState("");
+const [buildingName, setBuildingName] = useState("");
+const [description, setDescription] = useState("");
+const [isAccessible, setIsAccessible] = useState(false);
+
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
+  const [floor, setFloor] = useState("");
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("");
 
 
   const [errors, setErrors] = useState({
     facility: "",
     location: "",
-    exactLocation: "",
+    floor: "",
     openingHours: "",
     image: "",
   });
 
-  const toggleButton = (facility: string) => {
-    setSelected(prev => ({
-      ...prev,
-      [facility]: !prev[facility],
-    }));
-  };
 
-  const toggleFeature = (feature: string) => {
-    setSelectedFeatures(prev => ({
-      ...prev,
-      [feature]: !prev[feature],
-    }));
-  };
+  const toggleFeature = (id: number) => {
+  setSelectedFeatureIds((prev) =>
+    prev.includes(id)
+      ? prev.filter((featureId) => featureId !== id)
+      : [...prev, id]
+  );
+};
 
   const toggle24Hours = () => {
     setIs24Hours(prev => !prev);
   };
 
   useEffect(() => {
-    if (!image) {
-      setPreview(null);
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  useEffect(() => {
+  async function loadAmenityTypes() {
+    const { data, error } = await supabase
+      .from("amenity_types")
+      .select("id, slug, label, icon")
+      .order("label");
+
+    if (error) {
+      console.error(error);
       return;
     }
 
-    const objectUrl = URL.createObjectURL(image);
-    setPreview(objectUrl);
+    setFacilities(data);
+  }
 
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [image]);
+  async function loadFeatureTypes() {
+  const { data, error } = await supabase
+    .from("feature_types")
+    .select("id, slug, label, icon")
+    .order("label");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  setFeatures(data ?? []);
+  console.log(data);
+}
+
+  loadAmenityTypes();
+  loadFeatureTypes();
+}, []);
+
 
 
   async function searchLocation(query: string) {
     setLocationQuery(query);
+    setLocationStatus("");
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
 
     if (query.length < 3) {
       setSuggestions([]);
@@ -109,44 +153,87 @@ export default function AddFacilityPage() {
     setSuggestions(data.features ?? []);
   }
 
+  function handleUseCurrentLocation() {
+    setLocationStatus("");
+
+    if (!navigator.geolocation) {
+      setLocationStatus("Current location is not supported by this browser.");
+      return;
+    }
+
+    setIsLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setIsUsingCurrentLocation(true);
+        setSuggestions([]);
+        setErrors((prev) => ({ ...prev, location: "" }));
+        setLocationStatus(
+          "Current location pinned. Type the place name in the field above."
+        );
+        setIsLocating(false);
+      },
+      () => {
+        setLocationStatus(
+          "Unable to get your current location. Please allow location access and try again."
+        );
+        setIsLocating(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }
+
+  function handleSearchInstead() {
+    setIsUsingCurrentLocation(false);
+    setLatitude(null);
+    setLongitude(null);
+    setSuggestions([]);
+    setLocationStatus("Search mode enabled. Choose a location from the dropdown.");
+  }
+
   async function handleSubmit() {
 
     // clear previous errors
     setErrors({
       facility: "",
       location: "",
-      exactLocation: "",
+      floor: "",
       openingHours: "",
       image: "",
     });
 
-    const selectedFacilities = Object.keys(selected).filter(
-      (key) => selected[key]
-    );
-
-    const selectedFeatureList = Object.keys(selectedFeatures).filter(
-      (key) => selectedFeatures[key]
-    );
 
     // validation
     const newErrors = {
       facility: "",
       location: "",
-      exactLocation: "",
+      floor: "",
       openingHours: "",
       image: "",
     };
 
-    if (selectedFacilities.length === 0) {
+    if (selectedAmenityId === null) {
       newErrors.facility = "Please select at least one facility type.";
     }
 
+    if (!facilityName.trim()) {
+  alert("Please enter a facility name.");
+  return;
+}
+
     if (!locationQuery.trim() || latitude === null || longitude === null) {
-      newErrors.location = "Please select a location from the suggestions.";
+      newErrors.location =
+        "Please select a location from the suggestions or use your current location pin.";
     }
 
-    if (!exactLocation.trim()) {
-      newErrors.exactLocation = "Please enter the floor or exact location.";
+    if (!floor.trim()) {
+      newErrors.floor = "Please enter the floor.";
     }
 
     if (!is24Hours && (!openTime || !closeTime)) {
@@ -160,7 +247,7 @@ export default function AddFacilityPage() {
     if (
       newErrors.facility ||
       newErrors.location ||
-      newErrors.exactLocation ||
+      newErrors.floor ||
       newErrors.openingHours ||
       newErrors.image
     ) {
@@ -192,19 +279,23 @@ export default function AddFacilityPage() {
 
       // Save to Supabase
       const { error } = await supabase
-        .from("add_new_facility")
+        .from("facility_submissions")
         .insert([
           {
-            location: locationQuery,
-            exact_location: exactLocation,
-            latitude,
-            longitude,
-            facility_type: selectedFacilities,
-            features: selectedFeatureList,
-            open_time: is24Hours ? null : openTime,
-            close_time: is24Hours ? null : closeTime,
-            is_24_hours: is24Hours,
-            image_url: imageUrl,
+            name: facilityName,
+  amenity_type_id: selectedAmenityId,
+  latitude,
+  longitude,
+  address: locationQuery,
+  building_name: buildingName,
+  floor,
+  description,
+  photo_url: imageUrl,
+  open_time: is24Hours ? null : openTime,
+  close_time: is24Hours ? null : closeTime,
+  is_24_hours: is24Hours,
+  is_accessible: isAccessible,
+  feature_ids: selectedFeatureIds,
           },
         ]);
 
@@ -213,20 +304,21 @@ export default function AddFacilityPage() {
       alert("Submission successful!");
 
       // Reset form
-      setSelected({});
-      setSelectedFeatures({});
+      setSelectedAmenityId(null);
+      setSelectedFeatureIds([]);
       setLocationQuery("");
-      setExactLocation("");
+      setFloor("");
       setLatitude(null);
       setLongitude(null);
+      setIsUsingCurrentLocation(false);
       setSuggestions([]);
+      setLocationStatus("");
 
       setOpenTime("");
       setCloseTime("");
       setIs24Hours(false);
 
       setImage(null);
-      setPreview(null);
 
     } catch (err) {
       console.error(err);
@@ -246,6 +338,36 @@ export default function AddFacilityPage() {
       <AppPageHeader subtitle="Add a Facility" />
 
       {/* Facility Type */}
+
+
+      <section className={CARD}>
+  <h2 className={SECTION_TITLE}>
+    Facility Name
+    <span className="ml-1 text-red-500">*</span>
+  </h2>
+
+  <input
+    className={INPUT}
+    placeholder="e.g. City Square Mall Toilet"
+    value={facilityName}
+    onChange={(e) => setFacilityName(e.target.value)}
+  />
+
+  <input
+  className={`mt-3 ${INPUT}`}
+  placeholder="Building name (optional)"
+  value={buildingName}
+  onChange={(e) => setBuildingName(e.target.value)}
+/>
+
+<textarea
+  className={`mt-3 ${INPUT}`}
+  placeholder="Description (optional)"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+/>
+</section>
+
       <section className={CARD}>
         <h2 className={SECTION_TITLE}>
           Facility Type
@@ -257,19 +379,22 @@ export default function AddFacilityPage() {
         )}
         <div className="flex flex-wrap gap-3">
           {facilities.map((facility) => (
-            <button
-              key={facility}
-              type="button"
-              onClick={() => toggleButton(facility)}
-              className={`${BUTTON} ${
-                selected[facility]
-                  ? "border-manago-teal-dark bg-manago-chip"
-                  : "border-gray-500 bg-white hover:border-manago-teal"
-              }`}
-            >
-              {facility}
-            </button>
-          ))}
+  <button
+    key={facility.id}
+    type="button"
+    onClick={() => setSelectedAmenityId(
+    selectedAmenityId === facility.id ? null : facility.id
+  )
+}
+    className={`${BUTTON} ${
+      selectedAmenityId === facility.id
+        ? "border-manago-teal-dark bg-manago-chip"
+        : "border-gray-500 bg-white hover:border-manago-teal"
+    }`}
+  >
+    {facility.label}
+  </button>
+))}
         </div>
       </section>
 
@@ -288,15 +413,68 @@ export default function AddFacilityPage() {
         )}
         <input
           type="text"
-          placeholder="Search for a location"
+          aria-label={
+            isUsingCurrentLocation ? "Place name" : "Search for a location"
+          }
+          placeholder={
+            isUsingCurrentLocation
+              ? "Type the place name"
+              : "Search for a location"
+          }
           value={locationQuery}
-          onChange={(e) => searchLocation(e.target.value)}
+          onChange={(e) => {
+            if (isUsingCurrentLocation) {
+              setLocationQuery(e.target.value);
+              return;
+            }
+
+            searchLocation(e.target.value);
+          }}
           className={INPUT}
         />
 
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          disabled={isLocating}
+          className={`${BUTTON} mt-3 flex w-full items-center justify-center gap-2 disabled:opacity-60 ${
+            isUsingCurrentLocation
+              ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+              : "border-manago-teal-dark bg-manago-chip"
+          }`}
+          title="Use your current location for latitude and longitude"
+        >
+          <LocateFixed className="size-4" aria-hidden />
+          {isLocating
+            ? "Getting current location..."
+            : isUsingCurrentLocation
+              ? "Current location pinned"
+              : "Use current location pin"}
+        </button>
+
+        {isUsingCurrentLocation && (
+          <button
+            type="button"
+            onClick={handleSearchInstead}
+            className={`${BUTTON} mt-2 w-full border-gray-500 bg-white hover:border-manago-teal`}
+          >
+            Search for location instead
+          </button>
+        )}
+
+        {locationStatus && (
+          <p className="mt-2 text-sm text-gray-600">{locationStatus}</p>
+        )}
+
+        {latitude !== null && longitude !== null && (
+          <p className="mt-2 text-xs text-gray-500">
+            Coordinates set: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+          </p>
+        )}
+
         {suggestions.length > 0 && (
           <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow-sm">
-            {suggestions.map((place: any) => (
+            {suggestions.map((place) => (
               <button
                 key={place.id}
                 type="button"
@@ -305,7 +483,9 @@ export default function AddFacilityPage() {
                   setLocationQuery(place.place_name);
                   setLatitude(place.center[1]);
                   setLongitude(place.center[0]);
+                  setIsUsingCurrentLocation(false);
                   setSuggestions([]);
+                  setLocationStatus("Location selected from suggestions.");
                 }}
               >
                 {place.place_name}
@@ -314,14 +494,14 @@ export default function AddFacilityPage() {
           </div>
         )}
 
-        {errors.exactLocation && (
-          <p className="mt-2 text-sm text-red-600">{errors.exactLocation}</p>
+        {errors.floor && (
+          <p className="mt-2 text-sm text-red-600">{errors.floor}</p>
         )}
         <input
           type="text"
           placeholder="Floor / Exact area (e.g. Level 2 beside KFC)"
-          value={exactLocation}
-          onChange={(e) => setExactLocation(e.target.value)}
+          value={floor}
+          onChange={(e) => setFloor(e.target.value)}
           className={`mt-3 ${INPUT}`}
         />
       </section>
@@ -404,7 +584,6 @@ export default function AddFacilityPage() {
               const file = e.target.files?.[0];
               if (!file) return;
               setImage(file);
-              setPreview(URL.createObjectURL(file));
             }}
           />
         </label>
@@ -429,6 +608,20 @@ export default function AddFacilityPage() {
         )}
       </section>
 
+      {/*accessible*/}
+
+      <section className={CARD}>
+  <label className="flex items-center gap-3">
+    <input
+      type="checkbox"
+      checked={isAccessible}
+      onChange={(e) => setIsAccessible(e.target.checked)}
+    />
+
+    <span>Wheelchair Accessible</span>
+  </label>
+</section>
+
       {/* Features */}
       <section className={CARD}>
         <h2 className="mb-4 flex items-baseline gap-2">
@@ -438,17 +631,17 @@ export default function AddFacilityPage() {
         <div className="flex flex-wrap gap-3">
           {features.map((feature) => (
             <button
-              key={feature}
-              type="button"
-              onClick={() => toggleFeature(feature)}
-              className={`${BUTTON} ${
-                selectedFeatures[feature]
-                  ? "border-manago-teal-dark bg-manago-chip"
-                  : "border-gray-500 bg-white hover:border-manago-teal"
-              }`}
-            >
-              {feature}
-            </button>
+    key={feature.id}
+    type="button"
+    onClick={() => toggleFeature(feature.id)}
+    className={`${BUTTON} ${
+      selectedFeatureIds.includes(feature.id)
+        ? "border-manago-teal-dark bg-manago-chip"
+        : "border-gray-500 bg-white hover:border-manago-teal"
+    }`}
+  >
+    {feature.label}
+  </button>
           ))}
         </div>
       </section>
