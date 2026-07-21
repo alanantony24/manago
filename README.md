@@ -76,7 +76,7 @@ npm run ci
 ```
 
 After a production build, `npm run lighthouse` starts the built app and audits
-the `/nearby` and `/help` routes. Reports are written to `.lighthouseci/`.
+the `/sign-in` and `/help` routes. Reports are written to `.lighthouseci/`.
 
 Deployment uses GitHub Actions for CI and Vercel for preview and production
 deployments. See [docs/deployment.md](docs/deployment.md) for environment

@@ -3,7 +3,7 @@ module.exports = {
     collect: {
       startServerCommand: "npm run start -- --port 3001",
       startServerReadyPattern: "Ready in|Local:",
-      url: ["http://localhost:3001/nearby", "http://localhost:3001/help"],
+      url: ["http://localhost:3001/sign-in", "http://localhost:3001/help"],
       numberOfRuns: 3,
       settings: {
         chromeFlags: "--no-sandbox --disable-dev-shm-usage",

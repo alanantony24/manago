@@ -1,17 +1,17 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import { AuthShell } from "@/components/auth-shell";
 
-export default function SignInPage() {
+export default function RegisterPage() {
   return (
     <AuthShell
-      title="Sign in"
-      subtitle="Log in to find nearby facilities and contribute to the community."
-      alternateLabel="Don't have an account?"
-      alternateHref="/register"
+      title="Register"
+      subtitle="Join ManaGo to add facilities and unlock community features."
+      alternateLabel="Already have an account?"
+      alternateHref="/sign-in"
     >
-      <SignIn
+      <SignUp
         forceRedirectUrl="/nearby"
-        signUpUrl="/register"
+        signInUrl="/sign-in"
         appearance={{
           elements: {
             headerTitle: "text-lg font-semibold text-slate-800 tracking-tight",
