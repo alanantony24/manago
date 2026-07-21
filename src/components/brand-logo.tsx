@@ -1,15 +1,17 @@
 import { cn } from "@/lib/utils"
 import { ericaOne } from "@/lib/fonts"
-import {
-  MANAGO_BRAND_ORANGE,
-  ManaGoPinIcon,
-} from "@/components/manago-pin-icon"
+import { MANAGO_BRAND_ORANGE, MANAGO_NAVY } from "@/lib/brand-colors"
+import { ManaGoPinIcon } from "@/components/manago-pin-icon"
 
 type BrandLogoProps = {
   className?: string
+  variant?: "light" | "dark"
 }
 
-export default function BrandLogo({ className }: BrandLogoProps) {
+export default function BrandLogo({
+  className,
+  variant = "light",
+}: BrandLogoProps) {
   return (
     <div className={cn("flex items-center gap-1.5 sm:gap-2", className)}>
       <ManaGoPinIcon className="size-7 sm:size-8 md:size-9" />
@@ -19,7 +21,12 @@ export default function BrandLogo({ className }: BrandLogoProps) {
           "text-[1.375rem] leading-[0.95] tracking-tighter sm:text-[1.5rem] md:text-[1.75rem]"
         )}
       >
-        <span className="text-white">ManaGo</span>
+        <span
+          className={variant === "light" ? "text-white" : undefined}
+          style={variant === "dark" ? { color: MANAGO_NAVY } : undefined}
+        >
+          ManaGo
+        </span>
         <span style={{ color: MANAGO_BRAND_ORANGE }}>!</span>
       </h1>
     </div>

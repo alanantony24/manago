@@ -68,7 +68,6 @@ export function getFacilityTags(facility: Facility): string[] {
   }
   if (facility.is_accessible) tags.push("Accessible")
   if (facility.is_verified) tags.push("Verified")
-  tags.push("24 Hours")
 
   return tags
 }
@@ -88,13 +87,8 @@ export function getFacilityLocation(facility: Facility): string {
   return region ? `${region}, Singapore` : "Singapore"
 }
 
-export function getFacilitySummary(facility: Facility): string {
-  const notes = getFacilityNotes(facility.description)
-  if (notes && notes.length > 10) return notes
-
-  const typeLabel = facility.amenity_types?.label ?? "facility"
-  const location = facility.building_name ?? facility.name
-  return `Well-maintained ${typeLabel.toLowerCase()} at ${location}. Regularly cleaned and stocked.`
+export function getFacilitySummary(facility: Facility): string | null {
+  return getFacilityNotes(facility.description)
 }
 
 export function formatUpdatedAt(dateString: string): string {

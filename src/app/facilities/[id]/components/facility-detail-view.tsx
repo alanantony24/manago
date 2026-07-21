@@ -1,23 +1,18 @@
 "use client"
 
 import { Link } from "next-view-transitions"
+import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   ChevronLeft,
   Star,
-  Clock,
   MapPin,
   Navigation,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MenuToggle } from "@/components/nav-menu"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { Facility } from "@/types/facility"
-import {
-  MOCK_RATING,
-  MOCK_REVIEW_COUNT,
-  MOCK_UPVOTES,
-  MOCK_REVIEWS,
-} from "@/lib/mock-reviews"
 import {
   formatUpdatedAt,
   getDataQualityWarning,
@@ -31,32 +26,8 @@ type FacilityDetailViewProps = {
   facility: Facility
 }
 
-function StarRating({
-  rating,
-  size = "sm",
-}: {
-  rating: number
-  size?: "sm" | "md"
-}) {
-  const starSize = size === "md" ? "w-5 h-5" : "w-4 h-4"
-
-  return (
-    <div className="flex">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={`${starSize} ${
-            i < Math.round(rating)
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-gray-300"
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
-
 export default function FacilityDetailView({ facility }: FacilityDetailViewProps) {
+  const router = useRouter()
   const photo = facility.photo_url ?? "/toilet.jpg"
   const typeLabel = facility.amenity_types?.label ?? "Facility"
   const tags = getFacilityTags(facility)
@@ -64,7 +35,7 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
   const summary = getFacilitySummary(facility)
   const dataQuality = getFacilityDataQuality(facility)
   const qualityWarning = getDataQualityWarning(dataQuality)
-  const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
+  const navigateUrl = `/locate?facilityId=${facility.id}`
 
   return (
     <div className="min-h-full bg-gray-50 pb-28">
@@ -76,15 +47,20 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
 
+        <MenuToggle
+          variant="onLight"
+          className="absolute left-4 top-4 z-10"
+        />
+
         <Link
           href="/nearby"
-          className="absolute left-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
+          className="absolute left-[4.25rem] top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
           aria-label="Go back"
         >
           <ChevronLeft className="size-6 text-gray-800" />
         </Link>
 
-        <span className="absolute right-4 top-4 rounded-full bg-cyan-600 px-3 py-1 text-sm font-medium text-white shadow-md">
+        <span className="absolute right-4 top-4 rounded-full bg-manago-teal px-3 py-1 text-sm font-medium text-white shadow-md">
           {typeLabel}
         </span>
       </div>
@@ -110,87 +86,58 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-1.5">
-              <StarRating rating={MOCK_RATING} />
-              <span className="font-medium text-gray-900">{MOCK_RATING}</span>
-              <span className="text-gray-400">({MOCK_REVIEW_COUNT})</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="size-4 text-gray-400" />
-              <span>24 Hours</span>
+              <Star className="size-4 text-gray-300" />
+              <span>No reviews yet</span>
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin className="size-4 text-gray-400" />
-              <span>Nearby</span>
+              <span>{location}</span>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <FacilityTagPill key={tag}>{tag}</FacilityTagPill>
-            ))}
-          </div>
+          {tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <FacilityTagPill key={tag}>{tag}</FacilityTagPill>
+              ))}
+            </div>
+          )}
 
-          <p className="mt-4 text-sm leading-relaxed text-gray-600">{summary}</p>
+          {summary ? (
+            <p className="mt-4 text-sm leading-relaxed text-gray-600">
+              {summary}
+            </p>
+          ) : (
+            <p className="mt-4 text-sm leading-relaxed text-gray-500">
+              No details yet for this location.
+            </p>
+          )}
 
           <p className="mt-4 text-xs text-gray-400">
-            {facility.is_verified ? "Verified" : "Unverified"} • {MOCK_UPVOTES}{" "}
-            upvotes • {formatUpdatedAt(facility.created_at)}
+            {facility.is_verified ? "Verified" : "Unverified"} •{" "}
+            {formatUpdatedAt(facility.created_at)}
           </p>
         </div>
 
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
-            <button
-              type="button"
-              className="text-sm font-medium text-cyan-600 hover:text-cyan-700"
-            >
-              Write one
-            </button>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {MOCK_REVIEWS.map((review) => (
-              <div
-                key={review.id}
-                className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${review.avatarColor}`}
-                  >
-                    {review.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-gray-900">
-                        {review.author}
-                      </p>
-                      <span className="shrink-0 text-xs text-gray-400">
-                        {review.date}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      <StarRating rating={review.rating} />
-                    </div>
-                  </div>
-                </div>
-
-                {review.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {review.tags.map((tag) => (
-                      <FacilityTagPill key={tag} className="text-[11px]">
-                        {tag}
-                      </FacilityTagPill>
-                    ))}
-                  </div>
-                )}
-
-                <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                  {review.body}
-                </p>
-              </div>
-            ))}
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-medium text-gray-900">
+              Reviews are coming soon
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600">
+              Community reviews will appear here once the reviews feature is
+              ready. For now, use Navigate to visit the location.
+            </p>
+            <Link
+              href="/review"
+              className="mt-4 inline-flex text-sm font-medium text-manago-teal hover:text-manago-teal-dark"
+            >
+              Learn more on the Review page
+            </Link>
           </div>
         </section>
       </div>
@@ -199,20 +146,20 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         <div className="mx-auto flex max-w-lg gap-3">
           <Button
             variant="outline"
-            className="h-12 flex-1 rounded-xl border-cyan-600 text-cyan-600 hover:bg-cyan-50"
+            className="h-12 flex-1 rounded-xl border-gray-300 text-gray-500"
+            disabled
+            title="Reviews are coming soon"
           >
             <Star className="size-4" />
-            Review
+            Review soon
           </Button>
           <Button
-            className="h-12 flex-1 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700"
-            onClick={() =>
-              window.open(navigateUrl, "_blank", "noopener,noreferrer")
-            }
-          >
-            <Navigation className="size-4" />
-            Navigate
-          </Button>
+          className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
+          onClick={() => router.push(navigateUrl)}
+        >
+          <Navigation className="size-4" />
+          Navigate
+        </Button>
         </div>
       </div>
     </div>
