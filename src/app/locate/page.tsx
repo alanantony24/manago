@@ -401,7 +401,7 @@ function LocatePageInner() {
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-bold text-manago-navy">Exit navigation?</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Are you sure you want to exit? You'll be taken back to the home page.
+              Are you sure you want to exit? You&apos;ll be taken back to the home page.
             </p>
             <div className="mt-5 flex gap-3">
               <button
