@@ -32,16 +32,21 @@ export default function FacilityMap({
   const onUserLocationRef = useRef(onUserLocation)
   const onFacilitySelectRef = useRef(onFacilitySelect)
 
+  // Create the map once, then try to center it on the user's location.
   useEffect(() => {
     onUserLocationRef.current = onUserLocation
     onFacilitySelectRef.current = onFacilitySelect
   }, [onUserLocation, onFacilitySelect])
 
-  // Create the map once, then try to center it on the user's location.
   useEffect(() => {
     if (!containerRef.current) return
 
     const markers = markersRef.current
+    // Flips to true once this effect's cleanup runs (unmount, or a fast
+    // remount under Strict Mode). Guards against the async geolocation
+    // callback trying to touch a map that's already been torn down.
+    let cancelled = false
+
     const map = new mapboxgl.Map({
       accessToken: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN!,
       container: containerRef.current,
@@ -56,6 +61,8 @@ export default function FacilityMap({
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (cancelled) return
+
           const coords: [number, number] = [
             position.coords.longitude,
             position.coords.latitude,
@@ -73,6 +80,7 @@ export default function FacilityMap({
     })
 
     return () => {
+      cancelled = true
       map.remove()
       mapRef.current = null
       markers.clear()

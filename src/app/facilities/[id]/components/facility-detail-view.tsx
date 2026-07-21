@@ -1,6 +1,7 @@
 "use client"
 
 import { Link } from "next-view-transitions"
+import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   ChevronLeft,
@@ -58,6 +59,7 @@ function StarRating({
 }
 
 export default function FacilityDetailView({ facility }: FacilityDetailViewProps) {
+  const router = useRouter()
   const photo = facility.photo_url ?? "/toilet.jpg"
   const typeLabel = facility.amenity_types?.label ?? "Facility"
   const tags = getFacilityTags(facility)
@@ -65,7 +67,7 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
   const summary = getFacilitySummary(facility)
   const dataQuality = getFacilityDataQuality(facility)
   const qualityWarning = getDataQualityWarning(dataQuality)
-  const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
+  const navigateUrl = `/locate?facilityId=${facility.id}`
 
   return (
     <div className="min-h-full bg-gray-50 pb-28">
@@ -211,14 +213,12 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
             Review
           </Button>
           <Button
-            className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
-            onClick={() =>
-              window.open(navigateUrl, "_blank", "noopener,noreferrer")
-            }
-          >
-            <Navigation className="size-4" />
-            Navigate
-          </Button>
+          className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
+          onClick={() => router.push(navigateUrl)}
+        >
+          <Navigation className="size-4" />
+          Navigate
+        </Button>
         </div>
       </div>
     </div>
