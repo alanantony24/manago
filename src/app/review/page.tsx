@@ -10,12 +10,11 @@ export default function ReviewPage() {
           className="text-2xl font-bold tracking-tight"
           style={{ color: MANAGO_NAVY }}
         >
-          Reviews coming soon
+          Reviews are live
         </h2>
         <p className="mt-3 text-base leading-relaxed text-gray-600">
-          Browse facilities on Home or Locate for now. Review writing will open
-          after the reviews feature is finished, and facility pages already
-          show an honest empty state instead of placeholder ratings.
+          Open a facility from Home or Locate and tap Review to rate it,
+          tag what stood out, and leave a comment for the next person.
         </p>
       </div>
     </main>
