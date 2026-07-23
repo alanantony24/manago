@@ -36,11 +36,8 @@ next-env.d.ts
 #drafts
 **/draft*.txt
 
-# demo scraped facility photos (copyrighted; regenerate with npm run scrape-photos)
-/public/facility-photos/**
-!/public/facility-photos/
-!/public/facility-photos/*/
-!/public/facility-photos/**/.gitkeep
+# local scratch under facility-photos (keep dirs, not published assets)
+/public/facility-photos/_*/
 
 # local Lighthouse CI reports
 /.lighthouseci/

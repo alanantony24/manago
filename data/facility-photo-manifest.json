@@ -1,23 +1,7 @@
 {
-  "generated_at": "2026-07-23T15:25:35Z",
-  "note": "Demo-only. Toilets curated from Wikimedia Commons (clean SG public restrooms, no text overlays).",
+  "generated_at": "2026-07-23T16:18:32Z",
+  "note": "Demo facility photos served from /public/facility-photos and assigned at seed time.",
   "photos": {
-    "toilet_with_bidet": [
-      "/facility-photos/toilet_with_bidet/01.jpg",
-      "/facility-photos/toilet_with_bidet/02.jpg",
-      "/facility-photos/toilet_with_bidet/03.jpg",
-      "/facility-photos/toilet_with_bidet/04.jpg",
-      "/facility-photos/toilet_with_bidet/05.jpg",
-      "/facility-photos/toilet_with_bidet/06.jpg",
-      "/facility-photos/toilet_with_bidet/07.jpg",
-      "/facility-photos/toilet_with_bidet/08.jpg",
-      "/facility-photos/toilet_with_bidet/09.jpg"
-    ],
-    "water_cooler": [
-      "/facility-photos/water_cooler/01.jpg",
-      "/facility-photos/water_cooler/02.jpg",
-      "/facility-photos/water_cooler/03.jpg"
-    ],
     "nursing_room": [
       "/facility-photos/nursing_room/01.jpg",
       "/facility-photos/nursing_room/02.jpg",
@@ -69,6 +53,22 @@
       "/facility-photos/nursing_room/48.jpg",
       "/facility-photos/nursing_room/49.jpg",
       "/facility-photos/nursing_room/50.jpg"
+    ],
+    "toilet_with_bidet": [
+      "/facility-photos/toilet_with_bidet/01.jpg",
+      "/facility-photos/toilet_with_bidet/02.jpg",
+      "/facility-photos/toilet_with_bidet/03.jpg",
+      "/facility-photos/toilet_with_bidet/04.jpg",
+      "/facility-photos/toilet_with_bidet/05.jpg",
+      "/facility-photos/toilet_with_bidet/06.jpg",
+      "/facility-photos/toilet_with_bidet/07.jpg",
+      "/facility-photos/toilet_with_bidet/08.jpg",
+      "/facility-photos/toilet_with_bidet/09.jpg"
+    ],
+    "water_cooler": [
+      "/facility-photos/water_cooler/01.jpg",
+      "/facility-photos/water_cooler/02.jpg",
+      "/facility-photos/water_cooler/03.jpg"
     ]
   }
 }

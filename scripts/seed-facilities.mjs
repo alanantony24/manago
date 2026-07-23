@@ -112,16 +112,14 @@ async function main() {
     process.exit(1)
   }
 
-  const photoPools =
-    process.env.SEED_LOCAL_PHOTOS === "1" ? loadPhotoPools() : {}
-  if (process.env.SEED_LOCAL_PHOTOS === "1") {
-    const photoPoolSizes = TYPE_SLUGS.map(
-      (slug) => `${slug}: ${photoPools[slug]?.length ?? 0}`
-    )
-    console.log(`Photo pools — ${photoPoolSizes.join(", ")}`)
-  } else {
-    console.log(
-      "Skipping local photo_url paths (set SEED_LOCAL_PHOTOS=1 after npm run scrape-photos)."
+  const photoPools = loadPhotoPools()
+  const photoPoolSizes = TYPE_SLUGS.map(
+    (slug) => `${slug}: ${photoPools[slug]?.length ?? 0}`
+  )
+  console.log(`Photo pools — ${photoPoolSizes.join(", ")}`)
+  if (TYPE_SLUGS.every((slug) => !(photoPools[slug]?.length > 0))) {
+    console.warn(
+      "No photo pools found in data/facility-photo-manifest.json; photo_url will be null."
     )
   }
 
