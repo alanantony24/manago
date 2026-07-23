@@ -8,10 +8,11 @@ const isPublicRoute = createRouteMatcher([
   "/register(.*)",
   "/sign-up(.*)",
   "/help(.*)",
-  // Browse + navigate without forcing sign-in
+  // Browse + account entry without forcing a Clerk redirect loop
   "/nearby(.*)",
   "/facilities(.*)",
   "/locate(.*)",
+  "/profile(.*)",
 ])
 
 const clerkConfigured =

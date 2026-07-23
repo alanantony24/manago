@@ -47,6 +47,9 @@ export default function ProfilePage() {
       try {
         const result = await syncProfileAndGetActivity()
         if (!cancelled) setDashboard(result)
+      } catch (error) {
+        console.error("Failed to load profile activity:", error)
+        if (!cancelled) setDashboard(null)
       } finally {
         if (!cancelled) setActivityLoading(false)
       }

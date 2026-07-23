@@ -10,11 +10,12 @@ import {
 } from "react"
 import { usePathname } from "next/navigation"
 import { Link } from "next-view-transitions"
-import { useUser } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import {
   CircleHelp,
   ClipboardCheck,
   Home,
+  LogOut,
   PlusCircle,
   UserRound,
   type LucideIcon,
@@ -99,7 +100,8 @@ export function MenuToggle({ className, variant = "onDark" }: MenuToggleProps) {
 function NavDrawer() {
   const pathname = usePathname()
   const { isOpen, close } = useNavMenu()
-  const { user } = useUser()
+  const { isSignedIn, user } = useUser()
+  const { signOut } = useClerk()
   const showAdmin = isAdminUser(user)
 
   const items = showAdmin
@@ -157,7 +159,7 @@ function NavDrawer() {
           <BrandLogo variant="dark" />
         </div>
 
-        <nav className="flex flex-col gap-1 px-5 pt-8">
+        <nav className="flex flex-1 flex-col gap-1 px-5 pt-8">
           {items.map(({ href, label, icon: Icon }, index) => {
             const isActive =
               href === "/nearby"
@@ -188,6 +190,31 @@ function NavDrawer() {
             )
           })}
         </nav>
+
+        <div className="mt-auto border-t border-manago-navy/10 px-5 py-5">
+          {isSignedIn ? (
+            <button
+              type="button"
+              onClick={() => {
+                close()
+                void signOut({ redirectUrl: "/sign-in" })
+              }}
+              className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3.5 text-left text-lg font-semibold tracking-tight text-red-700 transition-colors hover:bg-red-50"
+            >
+              <LogOut className="size-6 shrink-0 stroke-[2.25]" aria-hidden />
+              Log out
+            </button>
+          ) : (
+            <Link
+              href="/sign-in"
+              onClick={close}
+              className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3.5 text-lg font-semibold tracking-tight text-manago-navy transition-colors hover:bg-white/40"
+            >
+              <UserRound className="size-6 shrink-0 stroke-[2.25]" aria-hidden />
+              Sign in
+            </Link>
+          )}
+        </div>
       </aside>
     </>
   )

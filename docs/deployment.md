@@ -49,13 +49,20 @@ Protect `main` so PRs require the **Quality, build, and performance** check.
 
 ### Production URL (`manago.vercel.app`)
 
-If the Vercel project is named `manago`, production is already at
-`https://manago.vercel.app`. In the Vercel dashboard → **Settings → Domains**,
-confirm `manago.vercel.app` is assigned to the Production environment (not only
-a preview deployment URL like `manago-….vercel.app`).
+`manago.vercel.app` only works if it is assigned to **this** Next.js ManaGo
+project in Vercel → **Settings → Domains**.
 
-Also add `manago.vercel.app` to Clerk’s allowed origins / redirect URLs and
-restrict the Mapbox token to that host.
+If that hostname currently opens a different “React App” (or anything that is
+not ManaGo), another Vercel project owns the name. Remove the domain from that
+other project first, then add `manago.vercel.app` to ManaGo’s Production
+domains.
+
+Also:
+
+1. Disable **Deployment Protection / Vercel Authentication** on Production if
+   you want the public internet to open the app without a Vercel login.
+2. Add the production host to Clerk’s allowed origins / redirect URLs.
+3. Restrict the Mapbox token to that host.
 
 ## Release checklist
 
