@@ -28,6 +28,15 @@ Vercel (server-side, Preview + Production).
 
 Protect `main` so PRs require the **Quality, build, and performance** check.
 
+## Facility photos
+
+Demo facility photos live in Supabase Storage (`addlocation-images/facility-photos/…`),
+not in git. User-submitted photos use the same bucket (flat `timestamp-name` keys).
+
+- Upload / refresh demo assets: `npm run upload-photos`
+- Then seed (assigns random Storage URLs): `npm run seed`
+- Local `public/facility-photos` is optional cache only and is gitignored.
+
 ## Before going public
 
 1. In the Supabase SQL editor, run `supabase/housekeeping_secure.sql`.

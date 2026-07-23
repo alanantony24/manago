@@ -17,6 +17,7 @@
     "clean-data": "node scripts/clean-facilities.mjs",
     "prune-data": "node scripts/prune-facilities.mjs",
     "scrape-photos": "node scripts/scrape-facility-photos.mjs",
+    "upload-photos": "node scripts/upload-facility-photos.mjs",
     "seed": "node scripts/seed-facilities.mjs"
   },
   "dependencies": {

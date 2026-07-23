@@ -36,8 +36,11 @@ next-env.d.ts
 #drafts
 **/draft*.txt
 
-# local scratch under facility-photos (keep dirs, not published assets)
-/public/facility-photos/_*/
+# facility demo photos — hosted in Supabase Storage after `npm run upload-photos`
+/public/facility-photos/**
+!/public/facility-photos/
+!/public/facility-photos/*/
+!/public/facility-photos/**/.gitkeep
 
 # local Lighthouse CI reports
 /.lighthouseci/
