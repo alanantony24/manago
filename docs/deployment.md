@@ -56,22 +56,26 @@ not in git. User-submitted photos use the same bucket (flat `timestamp-name` key
    - `SUPABASE_SERVICE_ROLE_KEY` (server only)
 4. Deploy, then restrict the Mapbox token to the Vercel domains.
 
-### Production URL (`manago.vercel.app`)
+### Make the app publicly reachable (required for Clerk)
 
-`manago.vercel.app` only works if it is assigned to **this** Next.js ManaGo
-project in Vercel → **Settings → Domains**.
+Your ManaGo Vercel project currently redirects anonymous visitors through
+**Vercel Deployment Protection / SSO**. That breaks Clerk sign-in, register,
+profile, and logout (blank forms / unreachable account pages).
 
-If that hostname currently opens a different “React App” (or anything that is
-not ManaGo), another Vercel project owns the name. Remove the domain from that
-other project first, then add `manago.vercel.app` to ManaGo’s Production
-domains.
+In the Vercel dashboard for this ManaGo project:
 
-Also:
+1. Open **Settings → Deployment Protection**
+2. Set **Production** protection to **None** (disable Vercel Authentication)
+3. Save, then open your project domain (the `*.vercel.app` host Vercel assigned)
 
-1. Disable **Deployment Protection / Vercel Authentication** on Production if
-   you want the public internet to open the app without a Vercel login.
-2. Add the production host to Clerk’s allowed origins / redirect URLs.
-3. Restrict the Mapbox token to that host.
+In the Clerk dashboard:
+
+1. Add that same host under **Allowed origins / redirect URLs**
+   (include `http://localhost:3000` for local dev)
+2. Confirm sign-in path `/sign-in` and sign-up path `/register`
+
+Until protection is off, only people logged into your Vercel team can open the
+site, and Clerk widgets will often fail to render.
 
 ## Release checklist
 

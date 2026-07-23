@@ -10,7 +10,7 @@ import {
 } from "react"
 import { usePathname } from "next/navigation"
 import { Link } from "next-view-transitions"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 import {
   CircleHelp,
   ClipboardCheck,
@@ -100,8 +100,7 @@ export function MenuToggle({ className, variant = "onDark" }: MenuToggleProps) {
 function NavDrawer() {
   const pathname = usePathname()
   const { isOpen, close } = useNavMenu()
-  const { isSignedIn, user } = useUser()
-  const { signOut } = useClerk()
+  const { isLoaded, isSignedIn, user } = useUser()
   const showAdmin = isAdminUser(user)
 
   const items = showAdmin
@@ -192,18 +191,15 @@ function NavDrawer() {
         </nav>
 
         <div className="mt-auto border-t border-manago-navy/10 px-5 py-5">
-          {isSignedIn ? (
-            <button
-              type="button"
-              onClick={() => {
-                close()
-                void signOut({ redirectUrl: "/sign-in" })
-              }}
+          {isLoaded && isSignedIn ? (
+            <Link
+              href="/sign-out"
+              onClick={close}
               className="flex w-full items-center gap-3.5 rounded-xl px-3 py-3.5 text-left text-lg font-semibold tracking-tight text-red-700 transition-colors hover:bg-red-50"
             >
               <LogOut className="size-6 shrink-0 stroke-[2.25]" aria-hidden />
               Log out
-            </button>
+            </Link>
           ) : (
             <Link
               href="/sign-in"

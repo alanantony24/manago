@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/register(.*)",
   "/sign-up(.*)",
+  "/sign-out(.*)",
   "/help(.*)",
   // Browse + account entry without forcing a Clerk redirect loop
   "/nearby(.*)",

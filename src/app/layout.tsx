@@ -25,8 +25,11 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ClerkProvider
+          signInUrl="/sign-in"
+          signUpUrl="/register"
           signInForceRedirectUrl="/nearby"
           signUpForceRedirectUrl="/nearby"
+          afterSignOutUrl="/sign-in"
         >
           <AuthRedirectFix />
           <ViewTransitions>

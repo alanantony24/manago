@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Link } from "next-view-transitions"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { useUser } from "@clerk/nextjs"
 import { LogOut } from "lucide-react"
 import {
   syncProfileAndGetActivity,
@@ -32,9 +32,18 @@ function initialsFromName(name: string) {
 /** Signed-in user profile with activity counts from Supabase. */
 export default function ProfilePage() {
   const { isLoaded, isSignedIn, user } = useUser()
-  const { signOut } = useClerk()
   const [dashboard, setDashboard] = useState<ProfileDashboard | null>(null)
   const [activityLoading, setActivityLoading] = useState(false)
+  const [loadTimedOut, setLoadTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (isLoaded) return
+    const timer = window.setTimeout(() => setLoadTimedOut(true), 8000)
+    return () => window.clearTimeout(timer)
+  }, [isLoaded])
+
+  const showLoading = !isLoaded && !loadTimedOut
+  const showAuthStuck = !isLoaded && loadTimedOut
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return
@@ -91,7 +100,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-background text-foreground">
       <AppPageHeader />
       <div className="mx-auto max-w-lg px-6 py-10">
-        {!isLoaded ? (
+        {showLoading ? (
           <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-4">
               <div
@@ -102,6 +111,25 @@ export default function ProfilePage() {
                 <div className="h-7 w-40 animate-pulse rounded bg-muted" />
                 <div className="h-4 w-56 animate-pulse rounded bg-muted/70" />
               </div>
+            </div>
+          </section>
+        ) : showAuthStuck ? (
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-2xl font-bold tracking-tight text-manago-navy">
+              Account unavailable
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Auth did not finish loading. If this keeps happening, turn off
+              Vercel Deployment Protection and add your Vercel domain in the
+              Clerk dashboard.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button asChild size="lg" className="w-full">
+                <Link href="/sign-in">Try sign in</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="w-full">
+                <Link href="/sign-out">Force log out</Link>
+              </Button>
             </div>
           </section>
         ) : !isSignedIn || !user ? (
@@ -205,13 +233,14 @@ export default function ProfilePage() {
             </section>
 
             <Button
-              type="button"
+              asChild
               size="lg"
               className="mt-6 h-12 w-full gap-2 rounded-xl border border-destructive/30 bg-red-50 text-red-700 hover:border-destructive/50 hover:bg-red-100 hover:text-red-800"
-              onClick={() => signOut({ redirectUrl: "/sign-in" })}
             >
-              <LogOut aria-hidden />
-              Log out
+              <Link href="/sign-out">
+                <LogOut aria-hidden />
+                Log out
+              </Link>
             </Button>
           </>
         )}
