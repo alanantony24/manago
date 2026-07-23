@@ -4,6 +4,7 @@ import { ViewTransitions } from "next-view-transitions";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ericaOne } from "@/lib/fonts";
+import { AuthRedirectFix } from "@/components/auth-redirect-fix";
 import { NavMenuProvider } from "@/components/nav-menu";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -25,7 +26,11 @@ export default function RootLayout({
       style={{ colorScheme: "light" }}
     >
       <body className="flex min-h-full flex-col bg-gray-50 text-manago-navy">
-        <ClerkProvider>
+        <ClerkProvider
+          signInForceRedirectUrl="/nearby"
+          signUpForceRedirectUrl="/nearby"
+        >
+          <AuthRedirectFix />
           <ViewTransitions>
             <NavMenuProvider>{children}</NavMenuProvider>
           </ViewTransitions>
