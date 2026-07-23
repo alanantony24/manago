@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button"
 import { MenuToggle } from "@/components/nav-menu"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { Facility } from "@/types/facility"
+import type { Review } from "@/types/review"
+import { getAggregateRating, formatReviewDate } from "@/lib/reviews"
 import {
   formatUpdatedAt,
   getDataQualityWarning,
@@ -24,9 +26,38 @@ import {
 
 type FacilityDetailViewProps = {
   facility: Facility
+  reviews: Review[]
 }
 
-export default function FacilityDetailView({ facility }: FacilityDetailViewProps) {
+function StarRating({
+  rating,
+  size = "sm",
+}: {
+  rating: number
+  size?: "sm" | "md"
+}) {
+  const starSize = size === "md" ? "w-5 h-5" : "w-4 h-4"
+
+  return (
+    <div className="flex">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`${starSize} ${
+            i < Math.round(rating)
+              ? "fill-yellow-400 text-yellow-400"
+              : "text-gray-300"
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
+export default function FacilityDetailView({
+  facility,
+  reviews,
+}: FacilityDetailViewProps) {
   const router = useRouter()
   const photo = facility.photo_url ?? "/toilet.jpg"
   const typeLabel = facility.amenity_types?.label ?? "Facility"
@@ -36,6 +67,9 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
   const dataQuality = getFacilityDataQuality(facility)
   const qualityWarning = getDataQualityWarning(dataQuality)
   const navigateUrl = `/locate?facilityId=${facility.id}`
+  const reviewHref = `/facilities/${facility.id}/review`
+  const { average: averageRating, count: reviewCount } =
+    getAggregateRating(reviews)
 
   return (
     <div className="min-h-full bg-gray-50 pb-28">
@@ -86,8 +120,17 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
 
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-1.5">
-              <Star className="size-4 text-gray-300" />
-              <span>No reviews yet</span>
+              <StarRating rating={averageRating} />
+              {reviewCount > 0 ? (
+                <>
+                  <span className="font-medium text-gray-900">
+                    {averageRating}
+                  </span>
+                  <span className="text-gray-400">({reviewCount})</span>
+                </>
+              ) : (
+                <span className="text-gray-400">No reviews yet</span>
+              )}
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin className="size-4 text-gray-400" />
@@ -122,44 +165,73 @@ export default function FacilityDetailView({ facility }: FacilityDetailViewProps
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
-          </div>
-
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center shadow-sm">
-            <p className="text-sm font-medium text-gray-900">
-              Reviews are coming soon
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-gray-600">
-              Community reviews will appear here once the reviews feature is
-              ready. For now, use Navigate to visit the location.
-            </p>
             <Link
-              href="/review"
-              className="mt-4 inline-flex text-sm font-medium text-manago-teal hover:text-manago-teal-dark"
+              href={reviewHref}
+              className="text-sm font-medium text-manago-teal hover:text-manago-teal-dark"
             >
-              Learn more on the Review page
+              Write one
             </Link>
           </div>
+
+          {reviews.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-center text-sm text-gray-400">
+              No reviews yet. Be the first to leave one!
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <StarRating rating={review.rating} />
+                    <span className="shrink-0 text-xs text-gray-400">
+                      {formatReviewDate(review.created_at)}
+                    </span>
+                  </div>
+
+                  {review.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {review.tags.map((tag) => (
+                        <FacilityTagPill key={tag} className="text-[11px]">
+                          {tag}
+                        </FacilityTagPill>
+                      ))}
+                    </div>
+                  )}
+
+                  {review.comment && (
+                    <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                      {review.comment}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg gap-3">
           <Button
+            asChild
             variant="outline"
-            className="h-12 flex-1 rounded-xl border-gray-300 text-gray-500"
-            disabled
-            title="Reviews are coming soon"
+            className="h-12 flex-1 rounded-xl border-manago-teal text-manago-teal hover:bg-manago-teal/10"
           >
-            <Star className="size-4" />
-            Review soon
+            <Link href={reviewHref}>
+              <Star className="size-4" />
+              Review
+            </Link>
           </Button>
           <Button
-          className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
-          onClick={() => router.push(navigateUrl)}
-        >
-          <Navigation className="size-4" />
-          Navigate
-        </Button>
+            className="h-12 flex-1 rounded-xl bg-manago-teal text-white hover:bg-manago-teal-dark"
+            onClick={() => router.push(navigateUrl)}
+          >
+            <Navigation className="size-4" />
+            Navigate
+          </Button>
         </div>
       </div>
     </div>
