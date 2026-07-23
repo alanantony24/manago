@@ -41,6 +41,10 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
         className="size-24 shrink-0 rounded-lg object-cover"
         src={getFacilityPhotoUrl(facility)}
         alt={facility.name}
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = "/toilet.jpg"
+        }}
       />
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">

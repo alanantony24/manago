@@ -110,11 +110,33 @@ export function formatUpdatedAt(dateString: string): string {
   return `Updated ${diffDays} days ago`
 }
 
-/** Prefer stored photo_url; otherwise the tracked placeholder asset. */
+const PLACEHOLDER_PHOTO = "/toilet.jpg"
+
+/**
+ * Demo scrapes under /facility-photos are gitignored and not deployed.
+ * Treat those (and empty) URLs as missing so cards don't 404.
+ */
+function isDeployablePhotoUrl(url: string): boolean {
+  const trimmed = url.trim()
+  if (!trimmed) return false
+  if (trimmed.startsWith("/facility-photos/")) return false
+  try {
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      const path = new URL(trimmed).pathname
+      if (path.startsWith("/facility-photos/")) return false
+    }
+  } catch {
+    return false
+  }
+  return true
+}
+
+/** Prefer a deployable photo_url; otherwise the tracked placeholder. */
 export function getFacilityPhotoUrl(
   facility: Pick<Facility, "photo_url" | "amenity_types">
 ): string {
-  if (facility.photo_url) return facility.photo_url
-  // Demo type photos under /facility-photos are gitignored (copyrighted).
-  return "/toilet.jpg"
+  if (facility.photo_url && isDeployablePhotoUrl(facility.photo_url)) {
+    return facility.photo_url
+  }
+  return PLACEHOLDER_PHOTO
 }

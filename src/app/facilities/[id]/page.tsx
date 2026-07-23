@@ -1,6 +1,6 @@
-import { currentUser } from "@clerk/nextjs/server"
 import { notFound } from "next/navigation"
 import { isAdminUser } from "@/lib/admin"
+import { getCurrentUserSafe } from "@/lib/clerk-server"
 import { createClient } from "@/lib/supabase/server"
 import type { AmenityType, Facility } from "@/types/facility"
 import type { Review } from "@/types/review"
@@ -40,7 +40,7 @@ export default async function FacilityPage({ params }: FacilityPageProps) {
     .eq("is_approved", true)
     .order("created_at", { ascending: false })
 
-  const user = await currentUser()
+  const user = await getCurrentUserSafe()
   const isAdmin = isAdminUser(user)
 
   let amenityTypes: AmenityType[] = []

@@ -47,6 +47,16 @@ Protect `main` so PRs require the **Quality, build, and performance** check.
    - `SUPABASE_SERVICE_ROLE_KEY` (server only)
 4. Deploy, then restrict the Mapbox token to the Vercel domains.
 
+### Production URL (`manago.vercel.app`)
+
+If the Vercel project is named `manago`, production is already at
+`https://manago.vercel.app`. In the Vercel dashboard → **Settings → Domains**,
+confirm `manago.vercel.app` is assigned to the Production environment (not only
+a preview deployment URL like `manago-….vercel.app`).
+
+Also add `manago.vercel.app` to Clerk’s allowed origins / redirect URLs and
+restrict the Mapbox token to that host.
+
 ## Release checklist
 
 - [ ] `npm run ci` passes

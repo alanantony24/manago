@@ -85,6 +85,10 @@ export default function FacilityDetailView({
           src={photo}
           alt={facility.name}
           className="h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null
+            e.currentTarget.src = "/toilet.jpg"
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
 
