@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import type { Facility } from "@/types/facility"
+import { getFacilityPhotoUrl } from "@/lib/facility-helpers"
 import ReviewForm from "./components/review-form"
 
 export const dynamic = "force-dynamic"
@@ -36,7 +37,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     <ReviewForm
       facilityId={facility.id}
       facilityName={facility.name}
-      facilityPhoto={facility.photo_url ?? "/toilet.jpg"}
+      facilityPhoto={getFacilityPhotoUrl(facility)}
     />
   )
 }

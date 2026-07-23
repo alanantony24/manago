@@ -2,12 +2,15 @@
 
 import { useState } from "react"
 import { Link, useTransitionRouter } from "next-view-transitions"
+import { useAuth } from "@clerk/nextjs"
 import { ChevronLeft, Star } from "lucide-react"
+import { toast } from "sonner"
+import { submitReview } from "@/app/actions/reviews"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { REVIEW_TAGS, RATING_LABELS } from "@/lib/reviews"
+import { LIMITS } from "@/lib/validation"
 
 type ReviewFormProps = {
   facilityId: string
@@ -21,54 +24,64 @@ export default function ReviewForm({
   facilityPhoto,
 }: ReviewFormProps) {
   const router = useTransitionRouter()
+  const { userId, isLoaded } = useAuth()
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [comment, setComment] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const backHref = `/facilities/${facilityId}`
   const displayRating = hoverRating || rating
 
+  /** Add or remove a review tag chip. */
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     )
   }
 
+  /** Validate locally, then submit the review via server action. */
   async function handleSubmit() {
     if (rating === 0) {
-      setError("Please select a rating.")
+      toast.info("Please select a rating.")
       return
     }
 
-    setError(null)
+    if (comment.trim().length > LIMITS.comment) {
+      toast.info(`Comment must be ${LIMITS.comment} characters or fewer.`)
+      return
+    }
+
+    if (!isLoaded || !userId) {
+      toast.info("Please sign in to submit a review.")
+      return
+    }
+
     setSubmitting(true)
 
-    const supabase = createClient()
-    const { error: insertError } = await supabase.from("reviews").insert([
-      {
-        facility_id: facilityId,
-        rating,
-        tags: selectedTags,
-        comment: comment.trim() || null,
-      },
-    ])
+    const { error } = await submitReview({
+      facilityId,
+      rating,
+      tags: selectedTags,
+      comment: comment.trim() || null,
+    })
 
     setSubmitting(false)
 
-    if (insertError) {
-      setError(insertError.message)
+    if (error) {
+      toast.error(error)
       return
     }
 
+    toast.success("Review submitted!")
     router.push(backHref)
   }
 
   return (
-    <div className="min-h-full bg-gray-50 pb-28">
+    <div className="min-h-full bg-background pb-28 text-foreground">
       <div className="relative h-40 w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote facility photo */}
         <img
           src={facilityPhoto}
           alt={facilityName}
@@ -81,17 +94,17 @@ export default function ReviewForm({
           className="absolute left-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
           aria-label="Go back"
         >
-          <ChevronLeft className="size-6 text-gray-800" />
+          <ChevronLeft className="size-6 text-manago-navy" />
         </Link>
       </div>
 
       <div className="relative z-10 -mt-6 px-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-gray-900">Add a Review</h1>
-          <p className="mt-1 text-sm text-gray-500">{facilityName}</p>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h1 className="text-xl font-bold text-manago-navy">Add a Review</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{facilityName}</p>
 
           <div className="mt-5">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-manago-navy">
               Overall experience
             </p>
             <div className="mt-2 flex items-center gap-1">
@@ -111,15 +124,15 @@ export default function ReviewForm({
                       className={cn(
                         "size-7",
                         value <= displayRating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
+                          ? "fill-manago-orange text-manago-orange"
+                          : "text-border"
                       )}
                     />
                   </button>
                 )
               })}
               {displayRating > 0 && (
-                <span className="ml-2 text-sm font-medium text-gray-600">
+                <span className="ml-2 text-sm font-medium text-muted-foreground">
                   {RATING_LABELS[displayRating]}
                 </span>
               )}
@@ -127,8 +140,8 @@ export default function ReviewForm({
           </div>
 
           <div className="mt-5">
-            <p className="text-sm font-semibold text-gray-900">How was it?</p>
-            <p className="text-xs text-gray-500">Select all that apply</p>
+            <p className="text-sm font-semibold text-manago-navy">How was it?</p>
+            <p className="text-xs text-muted-foreground">Select all that apply</p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {REVIEW_TAGS.map((tag) => {
                 const selected = selectedTags.includes(tag)
@@ -141,7 +154,7 @@ export default function ReviewForm({
                       "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                       selected
                         ? "border-manago-teal bg-manago-teal/10 text-manago-teal"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                        : "border-border bg-white text-muted-foreground hover:border-manago-teal/40"
                     )}
                   >
                     {tag}
@@ -152,25 +165,21 @@ export default function ReviewForm({
           </div>
 
           <div className="mt-5">
-            <p className="text-sm font-semibold text-gray-900">
-              Comment <span className="font-normal text-gray-400">optional</span>
+            <p className="text-sm font-semibold text-manago-navy">
+              Comment{" "}
+              <span className="font-normal text-muted-foreground">optional</span>
             </p>
             <Textarea
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => setComment(e.target.value.slice(0, LIMITS.comment))}
               placeholder="Share your experience to help others..."
+              maxLength={LIMITS.comment}
               className="mt-2 min-h-24 rounded-xl"
             />
           </div>
 
-          {error && (
-            <p className="mt-4 text-sm text-red-600" role="alert">
-              {error}
-            </p>
-          )}
-
           <div className="mt-5 rounded-xl bg-manago-notice p-3 text-center text-sm text-manago-notice-text">
-            Reviews are checked by our team before going live.
+            Please be respectful and share useful details that help others.
           </div>
 
           <Button

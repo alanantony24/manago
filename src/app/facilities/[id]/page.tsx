@@ -1,6 +1,8 @@
+import { currentUser } from "@clerk/nextjs/server"
 import { notFound } from "next/navigation"
+import { isAdminUser } from "@/lib/admin"
 import { createClient } from "@/lib/supabase/server"
-import type { Facility } from "@/types/facility"
+import type { AmenityType, Facility } from "@/types/facility"
 import type { Review } from "@/types/review"
 import FacilityDetailView from "./components/facility-detail-view"
 
@@ -33,15 +35,29 @@ export default async function FacilityPage({ params }: FacilityPageProps) {
 
   const { data: reviewsData } = await supabase
     .from("reviews")
-    .select("*")
+    .select("*, profiles(display_name)")
     .eq("facility_id", id)
     .eq("is_approved", true)
     .order("created_at", { ascending: false })
+
+  const user = await currentUser()
+  const isAdmin = isAdminUser(user)
+
+  let amenityTypes: AmenityType[] = []
+  if (isAdmin) {
+    const { data: amenityData } = await supabase
+      .from("amenity_types")
+      .select("id, slug, label")
+      .order("label")
+    amenityTypes = (amenityData ?? []) as AmenityType[]
+  }
 
   return (
     <FacilityDetailView
       facility={data as Facility}
       reviews={(reviewsData ?? []) as Review[]}
+      isAdmin={isAdmin}
+      amenityTypes={amenityTypes}
     />
   )
 }

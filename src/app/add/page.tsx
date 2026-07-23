@@ -1,89 +1,91 @@
-'use client';
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LocateFixed } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { Camera, LocateFixed } from "lucide-react";
+import { toast } from "sonner";
 import { AppPageHeader } from "@/components/app-page-header";
+import { SubmissionCelebration } from "@/components/submission-celebration";
+import { TimeSelect } from "@/components/time-select";
+import { submitFacilitySubmission } from "@/app/actions/submissions";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
+import {
+  isValidSingaporeCoordinate,
+  LIMITS,
+  validateImageFile,
+} from "@/lib/validation";
+import {
+  dedupeAmenityTypes,
+  dedupeBySlug,
+  EMPTY_FIELD_ERRORS,
+  isOverlappingFeature,
+  type AmenityType,
+  type FeatureType,
+  type FieldErrors,
+  type MapboxSuggestion,
+} from "./helpers";
 
-const CARD =
-  "m-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm";
+const CARD = "m-4 rounded-2xl border border-border bg-card p-5 shadow-sm";
 
-const BUTTON =
-  "rounded-xl border px-4 py-2 text-sm font-medium text-manago-navy transition-colors";
+const CHIP =
+  "rounded-xl border px-3.5 py-2 text-sm font-medium text-manago-navy transition-colors";
 
-const SECTION_TITLE = "mb-4 text-xl font-bold text-manago-navy";
+const SECTION_TITLE = "mb-3 text-lg font-bold text-manago-navy";
 
 const INPUT =
-  "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-manago-navy placeholder:text-gray-500 focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
+  "w-full rounded-xl border border-border bg-white px-4 py-3 text-manago-navy placeholder:text-muted-foreground focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30";
 
-type MapboxSuggestion = {
-  id: string;
-  place_name: string;
-  center: [number, number];
-};
+const LABEL = "mb-1.5 block text-sm font-medium text-muted-foreground";
 
+/** Contribute a new facility for admin review. */
 export default function AddFacilityPage() {
-  type AmenityType = {
-  id: number;
-  slug: string;
-  label: string;
-  icon: string | null;
-};
-
-type FeatureType = {
-  id: number;
-  slug: string;
-  label: string;
-  icon: string | null;
-};
-
+  const { userId, isLoaded: isAuthLoaded } = useAuth();
   const [features, setFeatures] = useState<FeatureType[]>([]);
-  const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(null);
-  const [facilities, setFacilities] = useState<AmenityType[]>([]);
+  const [selectedAmenityId, setSelectedAmenityId] = useState<number | null>(
+    null
+  );
+  const [amenityTypes, setAmenityTypes] = useState<AmenityType[]>([]);
   const [selectedFeatureIds, setSelectedFeatureIds] = useState<number[]>([]);
   const [is24Hours, setIs24Hours] = useState(false);
   const [openTime, setOpenTime] = useState("");
   const [closeTime, setCloseTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [image, setImage] = useState<File | null>(null);
-  const preview = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
+  const preview = useMemo(
+    () => (image ? URL.createObjectURL(image) : null),
+    [image]
+  );
 
   const [locationQuery, setLocationQuery] = useState("");
-
   const [facilityName, setFacilityName] = useState("");
-const [buildingName, setBuildingName] = useState("");
-const [description, setDescription] = useState("");
-const [isAccessible, setIsAccessible] = useState(false);
-
+  const [buildingName, setBuildingName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isAccessible, setIsAccessible] = useState(false);
   const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
   const [floor, setFloor] = useState("");
-
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isUsingCurrentLocation, setIsUsingCurrentLocation] = useState(false);
   const [locationStatus, setLocationStatus] = useState("");
+  const [fieldErrors, setFieldErrors] =
+    useState<FieldErrors>(EMPTY_FIELD_ERRORS);
 
-
-  const [errors, setErrors] = useState({
-    facility: "",
-    location: "",
-    floor: "",
-    openingHours: "",
-    image: "",
-  });
-
-
-  const toggleFeature = (id: number) => {
-  setSelectedFeatureIds((prev) =>
-    prev.includes(id)
-      ? prev.filter((featureId) => featureId !== id)
-      : [...prev, id]
+  const availableFeatures = useMemo(
+    () =>
+      features.filter((feature) => !isOverlappingFeature(feature, amenityTypes)),
+    [features, amenityTypes]
   );
-};
 
-  const toggle24Hours = () => {
-    setIs24Hours(prev => !prev);
+  /** Toggle a feature chip on or off. */
+  const toggleFeature = (id: number) => {
+    setSelectedFeatureIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((featureId) => featureId !== id)
+        : [...prev, id]
+    );
   };
 
   useEffect(() => {
@@ -95,41 +97,43 @@ const [isAccessible, setIsAccessible] = useState(false);
   }, [preview]);
 
   useEffect(() => {
-  async function loadAmenityTypes() {
-    const { data, error } = await supabase
-      .from("amenity_types")
-      .select("id, slug, label, icon")
-      .order("label");
+    /** Load amenity types for the type chips. */
+    async function loadAmenityTypes() {
+      const { data, error } = await supabase
+        .from("amenity_types")
+        .select("id, slug, label, icon")
+        .order("label");
 
-    if (error) {
-      console.error(error);
-      return;
+      if (error) {
+        console.error(error);
+        toast.error("Could not load facility types.");
+        return;
+      }
+
+      setAmenityTypes(dedupeAmenityTypes(data ?? []));
     }
 
-    setFacilities(data);
-  }
+    /** Load optional feature chips (excluding amenity overlaps). */
+    async function loadFeatureTypes() {
+      const { data, error } = await supabase
+        .from("feature_types")
+        .select("id, slug, label, icon")
+        .order("label");
 
-  async function loadFeatureTypes() {
-  const { data, error } = await supabase
-    .from("feature_types")
-    .select("id, slug, label, icon")
-    .order("label");
+      if (error) {
+        console.error(error);
+        toast.error("Could not load features.");
+        return;
+      }
 
-  if (error) {
-    console.error(error);
-    return;
-  }
+      setFeatures(dedupeBySlug(data ?? []));
+    }
 
-  setFeatures(data ?? []);
-  console.log(data);
-}
+    loadAmenityTypes();
+    loadFeatureTypes();
+  }, []);
 
-  loadAmenityTypes();
-  loadFeatureTypes();
-}, []);
-
-
-
+  /** Geocode a Singapore place query via Mapbox and show suggestions. */
   async function searchLocation(query: string) {
     setLocationQuery(query);
     setLocationStatus("");
@@ -149,15 +153,15 @@ const [isAccessible, setIsAccessible] = useState(false);
     );
 
     const data = await response.json();
-
     setSuggestions(data.features ?? []);
   }
 
+  /** Pin the form to the user's current GPS coordinates. */
   function handleUseCurrentLocation() {
     setLocationStatus("");
 
     if (!navigator.geolocation) {
-      setLocationStatus("Current location is not supported by this browser.");
+      toast.error("Current location is not supported by this browser.");
       return;
     }
 
@@ -165,18 +169,23 @@ const [isAccessible, setIsAccessible] = useState(false);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        if (!isValidSingaporeCoordinate(lat, lng)) {
+          toast.error("Current location must be within Singapore.");
+          setIsLocating(false);
+          return;
+        }
+        setLatitude(lat);
+        setLongitude(lng);
         setIsUsingCurrentLocation(true);
         setSuggestions([]);
-        setErrors((prev) => ({ ...prev, location: "" }));
-        setLocationStatus(
-          "Current location pinned. Type the place name in the field above."
-        );
+        setFieldErrors((prev) => ({ ...prev, location: false }));
+        setLocationStatus("Pinned. Enter the place name above.");
         setIsLocating(false);
       },
       () => {
-        setLocationStatus(
+        toast.error(
           "Unable to get your current location. Please allow location access and try again."
         );
         setIsLocating(false);
@@ -189,121 +198,124 @@ const [isAccessible, setIsAccessible] = useState(false);
     );
   }
 
+  /** Clear the GPS pin and return to address search. */
   function handleSearchInstead() {
     setIsUsingCurrentLocation(false);
     setLatitude(null);
     setLongitude(null);
     setSuggestions([]);
-    setLocationStatus("Search mode enabled. Choose a location from the dropdown.");
+    setLocationStatus("");
   }
 
+  /** Client-side validation, then submit FormData to the server action. */
   async function handleSubmit() {
+    setFieldErrors(EMPTY_FIELD_ERRORS);
 
-    // clear previous errors
-    setErrors({
-      facility: "",
-      location: "",
-      floor: "",
-      openingHours: "",
-      image: "",
-    });
+    const nextErrors: FieldErrors = { ...EMPTY_FIELD_ERRORS };
+    const messages: string[] = [];
+    const trimmedName = facilityName.trim();
+    const trimmedFloor = floor.trim();
 
-
-    // validation
-    const newErrors = {
-      facility: "",
-      location: "",
-      floor: "",
-      openingHours: "",
-      image: "",
-    };
+    if (!trimmedName) {
+      messages.push("Please enter a facility name.");
+    } else if (trimmedName.length > LIMITS.name) {
+      messages.push(`Facility name must be ${LIMITS.name} characters or fewer.`);
+    }
 
     if (selectedAmenityId === null) {
-      newErrors.facility = "Please select at least one facility type.";
-    }
-
-    if (!facilityName.trim()) {
-  alert("Please enter a facility name.");
-  return;
-}
-
-    if (!locationQuery.trim() || latitude === null || longitude === null) {
-      newErrors.location =
-        "Please select a location from the suggestions or use your current location pin.";
-    }
-
-    if (!floor.trim()) {
-      newErrors.floor = "Please enter the floor.";
-    }
-
-    if (!is24Hours && (!openTime || !closeTime)) {
-      newErrors.openingHours = "Please enter both opening and closing times.";
-    }
-
-    if (!image) {
-      newErrors.image = "Please upload a photo.";
+      nextErrors.facility = true;
+      messages.push("Please select a facility type.");
     }
 
     if (
-      newErrors.facility ||
-      newErrors.location ||
-      newErrors.floor ||
-      newErrors.openingHours ||
-      newErrors.image
+      !locationQuery.trim() ||
+      latitude === null ||
+      longitude === null ||
+      !isValidSingaporeCoordinate(latitude, longitude)
     ) {
-      setErrors(newErrors);
+      nextErrors.location = true;
+      messages.push(
+        "Please select a location from the suggestions or use your current location pin."
+      );
+    }
+
+    if (!trimmedFloor) {
+      nextErrors.floor = true;
+      messages.push("Please enter the floor.");
+    } else if (trimmedFloor.length > LIMITS.floor) {
+      nextErrors.floor = true;
+      messages.push(`Floor must be ${LIMITS.floor} characters or fewer.`);
+    }
+
+    if (buildingName.trim().length > LIMITS.buildingName) {
+      messages.push(
+        `Building name must be ${LIMITS.buildingName} characters or fewer.`
+      );
+    }
+
+    if (description.trim().length > LIMITS.description) {
+      messages.push(`Notes must be ${LIMITS.description} characters or fewer.`);
+    }
+
+    if (!is24Hours && (!openTime || !closeTime)) {
+      nextErrors.openingHours = true;
+      messages.push("Please set opening and closing times, or turn on 24 hours.");
+    }
+
+    if (!image) {
+      nextErrors.image = true;
+      messages.push("Please upload a photo.");
+    } else {
+      const imageError = validateImageFile(image);
+      if (imageError) {
+        nextErrors.image = true;
+        messages.push(imageError);
+      }
+    }
+
+    if (messages.length > 0) {
+      setFieldErrors(nextErrors);
+      toast.info(messages[0], {
+        description:
+          messages.length > 1
+            ? `${messages.length - 1} more issue${messages.length > 2 ? "s" : ""} to fix`
+            : undefined,
+      });
+      return;
+    }
+
+    if (!isAuthLoaded || !userId) {
+      toast.info("Please sign in to contribute a facility.");
       return;
     }
 
     setSubmitting(true);
 
     try {
-      let imageUrl: string | null = null;
+      const formData = new FormData();
+      formData.set("name", trimmedName);
+      formData.set("amenityTypeId", String(selectedAmenityId));
+      formData.set("latitude", String(latitude));
+      formData.set("longitude", String(longitude));
+      formData.set("address", locationQuery.trim());
+      formData.set("buildingName", buildingName.trim());
+      formData.set("floor", trimmedFloor);
+      formData.set("description", description.trim());
+      formData.set("openTime", is24Hours ? "" : openTime);
+      formData.set("closeTime", is24Hours ? "" : closeTime);
+      formData.set("is24Hours", String(is24Hours));
+      formData.set("isAccessible", String(isAccessible));
+      formData.set("featureIds", JSON.stringify(selectedFeatureIds));
+      if (image) formData.set("image", image);
 
-      // Upload image
-      if (image) {
-        const fileName = `${Date.now()}-${image.name}`;
+      const { error } = await submitFacilitySubmission(formData);
 
-        const { error: uploadError } = await supabase.storage
-          .from("addlocation-images")
-          .upload(fileName, image);
+      if (error) throw new Error(error);
 
-        if (uploadError) {
-          throw new Error(uploadError.message);
-        }
-
-        imageUrl = supabase.storage
-          .from("addlocation-images")
-          .getPublicUrl(fileName).data.publicUrl;
-      }
-
-      // Save to Supabase
-      const { error } = await supabase
-        .from("facility_submissions")
-        .insert([
-          {
-            name: facilityName,
-  amenity_type_id: selectedAmenityId,
-  latitude,
-  longitude,
-  address: locationQuery,
-  building_name: buildingName,
-  floor,
-  description,
-  photo_url: imageUrl,
-  open_time: is24Hours ? null : openTime,
-  close_time: is24Hours ? null : closeTime,
-  is_24_hours: is24Hours,
-  is_accessible: isAccessible,
-  feature_ids: selectedFeatureIds,
-          },
-        ]);
-
-      if (error) throw new Error(error.message);
-
-      alert("Submission successful!");
-
-      // Reset form
+      setFacilityName("");
+      setBuildingName("");
+      setDescription("");
+      setIsAccessible(false);
       setSelectedAmenityId(null);
       setSelectedFeatureIds([]);
       setLocationQuery("");
@@ -313,109 +325,122 @@ const [isAccessible, setIsAccessible] = useState(false);
       setIsUsingCurrentLocation(false);
       setSuggestions([]);
       setLocationStatus("");
-
       setOpenTime("");
       setCloseTime("");
       setIs24Hours(false);
-
       setImage(null);
-
+      setFieldErrors(EMPTY_FIELD_ERRORS);
+      setShowCelebration(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error(err);
-
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
+      toast.error(
+        err instanceof Error ? err.message : "Something went wrong."
       );
-
     } finally {
       setSubmitting(false);
     }
   }
+
+  if (showCelebration) {
+    return (
+      <SubmissionCelebration
+        onAddAnother={() => setShowCelebration(false)}
+      />
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-gray-50 pb-8 text-manago-navy">
-      <AppPageHeader subtitle="Add a Facility" />
-
-      {/* Facility Type */}
-
-
-      <section className={CARD}>
-  <h2 className={SECTION_TITLE}>
-    Facility Name
-    <span className="ml-1 text-red-500">*</span>
-  </h2>
-
-  <input
-    className={INPUT}
-    placeholder="e.g. City Square Mall Toilet"
-    value={facilityName}
-    onChange={(e) => setFacilityName(e.target.value)}
-  />
-
-  <input
-  className={`mt-3 ${INPUT}`}
-  placeholder="Building name (optional)"
-  value={buildingName}
-  onChange={(e) => setBuildingName(e.target.value)}
-/>
-
-<textarea
-  className={`mt-3 ${INPUT}`}
-  placeholder="Description (optional)"
-  value={description}
-  onChange={(e) => setDescription(e.target.value)}
-/>
-</section>
+    <main className="min-h-screen bg-background pb-8 text-foreground">
+      <AppPageHeader />
 
       <section className={CARD}>
         <h2 className={SECTION_TITLE}>
-          Facility Type
-          <span className="ml-1 text-red-500">*</span>
+          Basics
+          <span className="ml-1 text-destructive">*</span>
         </h2>
 
-        {errors.facility && (
-          <p className="mb-3 text-sm text-red-600">{errors.facility}</p>
-        )}
-        <div className="flex flex-wrap gap-3">
-          {facilities.map((facility) => (
-  <button
-    key={facility.id}
-    type="button"
-    onClick={() => setSelectedAmenityId(
-    selectedAmenityId === facility.id ? null : facility.id
-  )
-}
-    className={`${BUTTON} ${
-      selectedAmenityId === facility.id
-        ? "border-manago-teal-dark bg-manago-chip"
-        : "border-gray-500 bg-white hover:border-manago-teal"
-    }`}
-  >
-    {facility.label}
-  </button>
-))}
+        <label className={LABEL} htmlFor="facility-name">
+          Facility name
+        </label>
+        <input
+          id="facility-name"
+          className={INPUT}
+          placeholder="e.g. City Square Mall Toilet"
+          value={facilityName}
+          maxLength={LIMITS.name}
+          onChange={(e) => setFacilityName(e.target.value)}
+        />
+
+        <p className={cn(LABEL, "mt-4")}>
+          Type
+          <span className="ml-1 text-destructive">*</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {amenityTypes.map((amenity) => (
+            <button
+              key={amenity.id}
+              type="button"
+              onClick={() => {
+                setSelectedAmenityId(
+                  selectedAmenityId === amenity.id ? null : amenity.id
+                );
+                setFieldErrors((prev) => ({ ...prev, facility: false }));
+              }}
+              className={cn(
+                CHIP,
+                selectedAmenityId === amenity.id
+                  ? "border-manago-teal-dark bg-manago-chip"
+                  : "border-border bg-white hover:border-manago-teal",
+                fieldErrors.facility &&
+                  selectedAmenityId === null &&
+                  "border-destructive"
+              )}
+            >
+              {amenity.label}
+            </button>
+          ))}
         </div>
+
+        <label className={cn(LABEL, "mt-4")} htmlFor="building-name">
+          Building name
+          <span className="ml-1 font-normal">(optional)</span>
+        </label>
+        <input
+          id="building-name"
+          className={INPUT}
+          placeholder="e.g. City Square Mall"
+          value={buildingName}
+          maxLength={LIMITS.buildingName}
+          onChange={(e) => setBuildingName(e.target.value)}
+        />
+
+        <label className={cn(LABEL, "mt-4")} htmlFor="description">
+          Notes
+          <span className="ml-1 font-normal">(optional)</span>
+        </label>
+        <textarea
+          id="description"
+          className={cn(INPUT, "min-h-[88px] resize-y")}
+          placeholder="Anything helpful for others to find it"
+          value={description}
+          maxLength={LIMITS.description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
       </section>
 
-      {/* Location */}
       <section className={CARD}>
         <h2 className={SECTION_TITLE}>
           Location
-          <span className="ml-1 text-red-500">*</span>
+          <span className="ml-1 text-destructive">*</span>
         </h2>
-        <p className="mb-3 text-sm text-gray-600">
-          eg. City Square Mall Level 2 Toilet
-        </p>
 
-        {errors.location && (
-          <p className="mb-2 text-sm text-red-600">{errors.location}</p>
-        )}
+        <label className={LABEL} htmlFor="location-query">
+          Address or place
+        </label>
         <input
+          id="location-query"
           type="text"
-          aria-label={
-            isUsingCurrentLocation ? "Place name" : "Search for a location"
-          }
           placeholder={
             isUsingCurrentLocation
               ? "Type the place name"
@@ -427,65 +452,68 @@ const [isAccessible, setIsAccessible] = useState(false);
               setLocationQuery(e.target.value);
               return;
             }
-
             searchLocation(e.target.value);
           }}
-          className={INPUT}
+          className={cn(
+            INPUT,
+            fieldErrors.location && "border-destructive focus:border-destructive"
+          )}
         />
 
-        <button
-          type="button"
-          onClick={handleUseCurrentLocation}
-          disabled={isLocating}
-          className={`${BUTTON} mt-3 flex w-full items-center justify-center gap-2 disabled:opacity-60 ${
-            isUsingCurrentLocation
-              ? "border-manago-teal-dark bg-manago-teal-dark text-white"
-              : "border-manago-teal-dark bg-manago-chip"
-          }`}
-          title="Use your current location for latitude and longitude"
-        >
-          <LocateFixed className="size-4" aria-hidden />
-          {isLocating
-            ? "Getting current location..."
-            : isUsingCurrentLocation
-              ? "Current location pinned"
-              : "Use current location pin"}
-        </button>
-
-        {isUsingCurrentLocation && (
+        <div className="mt-3 flex gap-2">
           <button
             type="button"
-            onClick={handleSearchInstead}
-            className={`${BUTTON} mt-2 w-full border-gray-500 bg-white hover:border-manago-teal`}
+            onClick={handleUseCurrentLocation}
+            disabled={isLocating}
+            className={cn(
+              CHIP,
+              "flex flex-1 items-center justify-center gap-2 disabled:opacity-60",
+              isUsingCurrentLocation
+                ? "border-manago-teal-dark bg-manago-teal-dark text-white"
+                : "border-border bg-white hover:border-manago-teal"
+            )}
           >
-            Search for location instead
+            <LocateFixed className="size-4 shrink-0" aria-hidden />
+            {isLocating
+              ? "Locating…"
+              : isUsingCurrentLocation
+                ? "Pinned"
+                : "Use my location"}
           </button>
-        )}
+
+          {isUsingCurrentLocation && (
+            <button
+              type="button"
+              onClick={handleSearchInstead}
+              className={cn(
+                CHIP,
+                "border-border bg-white hover:border-manago-teal"
+              )}
+            >
+              Search instead
+            </button>
+          )}
+        </div>
 
         {locationStatus && (
-          <p className="mt-2 text-sm text-gray-600">{locationStatus}</p>
-        )}
-
-        {latitude !== null && longitude !== null && (
-          <p className="mt-2 text-xs text-gray-500">
-            Coordinates set: {latitude.toFixed(6)}, {longitude.toFixed(6)}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{locationStatus}</p>
         )}
 
         {suggestions.length > 0 && (
-          <div className="mt-2 rounded-xl border border-gray-300 bg-white shadow-sm">
+          <div className="mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-sm">
             {suggestions.map((place) => (
               <button
                 key={place.id}
                 type="button"
-                className="block w-full px-4 py-3 text-left text-manago-navy hover:bg-gray-50"
+                className="block w-full border-b border-border px-4 py-3 text-left text-sm text-manago-navy last:border-b-0 hover:bg-muted"
                 onClick={() => {
                   setLocationQuery(place.place_name);
                   setLatitude(place.center[1]);
                   setLongitude(place.center[0]);
                   setIsUsingCurrentLocation(false);
                   setSuggestions([]);
-                  setLocationStatus("Location selected from suggestions.");
+                  setLocationStatus("");
+                  setFieldErrors((prev) => ({ ...prev, location: false }));
                 }}
               >
                 {place.place_name}
@@ -494,172 +522,217 @@ const [isAccessible, setIsAccessible] = useState(false);
           </div>
         )}
 
-        {errors.floor && (
-          <p className="mt-2 text-sm text-red-600">{errors.floor}</p>
-        )}
+        <label className={cn(LABEL, "mt-4")} htmlFor="floor">
+          Floor / exact spot
+          <span className="ml-1 text-destructive">*</span>
+        </label>
         <input
+          id="floor"
           type="text"
-          placeholder="Floor / Exact area (e.g. Level 2 beside KFC)"
+          placeholder="e.g. Level 2 beside KFC"
           value={floor}
-          onChange={(e) => setFloor(e.target.value)}
-          className={`mt-3 ${INPUT}`}
+          maxLength={LIMITS.floor}
+          onChange={(e) => {
+            setFloor(e.target.value);
+            setFieldErrors((prev) => ({ ...prev, floor: false }));
+          }}
+          className={cn(
+            INPUT,
+            fieldErrors.floor && "border-destructive focus:border-destructive"
+          )}
         />
       </section>
 
-      {/* Opening Hours */}
-      <div className={CARD}>
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-manago-navy">Opening Hours</h2>
+      <section className={CARD}>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-manago-navy">Hours</h2>
 
           <button
             type="button"
-            onClick={toggle24Hours}
-            className={`${BUTTON} ${
-              is24Hours
-                ? "border-manago-teal-dark bg-manago-teal-dark text-white"
-                : "border-gray-500 bg-white hover:border-manago-teal"
-            }`}
+            role="switch"
+            aria-checked={is24Hours}
+            aria-label="Open 24 hours"
+            onClick={() => {
+              setIs24Hours((prev) => {
+                const next = !prev;
+                if (next) {
+                  setOpenTime("");
+                  setCloseTime("");
+                  setFieldErrors((errors) => ({
+                    ...errors,
+                    openingHours: false,
+                  }));
+                }
+                return next;
+              });
+            }}
+            className="flex items-center gap-2.5 select-none"
           >
-            24 Hours
+            <span className="text-sm font-medium text-manago-navy">
+              24 hours
+            </span>
+            <span
+              className={cn(
+                "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+                is24Hours ? "bg-manago-teal-dark" : "bg-border"
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 left-0.5 size-6 rounded-full bg-white shadow transition-transform",
+                  is24Hours && "translate-x-5"
+                )}
+              />
+            </span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Opens
-            </label>
-            <input
-              type="time"
+        {is24Hours ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Open all day — no open/close time needed.
+          </p>
+        ) : (
+          <div
+            className={cn(
+              "mt-4 grid grid-cols-2 gap-3",
+              fieldErrors.openingHours && "rounded-xl ring-2 ring-destructive/30"
+            )}
+          >
+            <TimeSelect
+              id="open-time"
+              label="Opens"
               value={openTime}
-              onChange={(e) => setOpenTime(e.target.value)}
-              disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
-                is24Hours
-                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
-              }`}
+              onChange={(value) => {
+                setOpenTime(value);
+                setFieldErrors((prev) => ({ ...prev, openingHours: false }));
+              }}
             />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Closes
-            </label>
-            <input
-              type="time"
+            <TimeSelect
+              id="close-time"
+              label="Closes"
               value={closeTime}
-              onChange={(e) => setCloseTime(e.target.value)}
-              disabled={is24Hours}
-              className={`w-full rounded-xl border px-3 py-2 text-manago-navy transition ${
-                is24Hours
-                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                  : "border-gray-300 bg-white focus:border-manago-teal-dark focus:outline-none focus:ring-2 focus:ring-manago-teal/30"
-              }`}
+              onChange={(value) => {
+                setCloseTime(value);
+                setFieldErrors((prev) => ({ ...prev, openingHours: false }));
+              }}
             />
           </div>
-        </div>
-
-        {errors.openingHours && (
-          <p className="mt-2 text-sm text-red-600">{errors.openingHours}</p>
         )}
-      </div>
+      </section>
 
-      {/* Photo Upload */}
       <section className={CARD}>
-        <h2 className={SECTION_TITLE}>Photo Upload</h2>
+        <h2 className={SECTION_TITLE}>
+          Photo
+          <span className="ml-1 text-destructive">*</span>
+        </h2>
 
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-400 py-10 transition hover:border-manago-teal-dark hover:bg-manago-mint/30">
-          <span className="text-5xl" aria-hidden>
-            📷
-          </span>
-          <span className="mt-3 text-sm font-medium text-gray-600">
-            Tap to add a photo
-          </span>
+        <label
+          className={cn(
+            "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed py-8 transition hover:border-manago-teal-dark hover:bg-manago-mint/30",
+            fieldErrors.image ? "border-destructive" : "border-border"
+          )}
+        >
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element -- local object URL preview
+            <img
+              src={preview}
+              alt="Selected image preview"
+              className="h-40 w-full rounded-xl object-cover px-3"
+            />
+          ) : (
+            <>
+              <Camera
+                className="size-9 text-muted-foreground"
+                strokeWidth={1.5}
+                aria-hidden
+              />
+              <span className="mt-2 text-sm font-medium text-muted-foreground">
+                Tap to add a photo
+              </span>
+            </>
+          )}
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
+              e.target.value = "";
               if (!file) return;
+              const imageError = validateImageFile(file);
+              if (imageError) {
+                toast.info(imageError);
+                setFieldErrors((prev) => ({ ...prev, image: true }));
+                return;
+              }
               setImage(file);
+              setFieldErrors((prev) => ({ ...prev, image: false }));
             }}
           />
         </label>
 
-        {errors.image && (
-          <p className="mt-2 text-sm text-red-600">{errors.image}</p>
-        )}
         {image && (
-          <p className="mt-3 text-sm font-medium text-manago-teal-dark">
-            ✓ {image.name}
+          <p className="mt-2 truncate text-center text-sm text-muted-foreground">
+            {image.name}
           </p>
-        )}
-
-        {preview && (
-          <div className="mt-4">
-            <img
-              src={preview}
-              alt="Selected image preview"
-              className="h-48 w-full rounded-xl border border-gray-200 object-cover"
-            />
-          </div>
         )}
       </section>
 
-      {/*accessible*/}
-
       <section className={CARD}>
-  <label className="flex items-center gap-3">
-    <input
-      type="checkbox"
-      checked={isAccessible}
-      onChange={(e) => setIsAccessible(e.target.checked)}
-    />
-
-    <span>Wheelchair Accessible</span>
-  </label>
-</section>
-
-      {/* Features */}
-      <section className={CARD}>
-        <h2 className="mb-4 flex items-baseline gap-2">
-          <span className="text-xl font-bold text-manago-navy">Features</span>
-          <span className="text-sm font-normal text-gray-500">(Optional)</span>
+        <h2 className="mb-1 text-lg font-bold text-manago-navy">
+          Extras
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            Optional
+          </span>
         </h2>
-        <div className="flex flex-wrap gap-3">
-          {features.map((feature) => (
+        <p className="mb-3 text-sm text-muted-foreground">
+          Accessibility and other useful details.
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setIsAccessible((prev) => !prev)}
+            className={cn(
+              CHIP,
+              isAccessible
+                ? "border-manago-teal-dark bg-manago-chip"
+                : "border-border bg-white hover:border-manago-teal"
+            )}
+          >
+            Wheelchair accessible
+          </button>
+
+          {availableFeatures.map((feature) => (
             <button
-    key={feature.id}
-    type="button"
-    onClick={() => toggleFeature(feature.id)}
-    className={`${BUTTON} ${
-      selectedFeatureIds.includes(feature.id)
-        ? "border-manago-teal-dark bg-manago-chip"
-        : "border-gray-500 bg-white hover:border-manago-teal"
-    }`}
-  >
-    {feature.label}
-  </button>
+              key={feature.id}
+              type="button"
+              onClick={() => toggleFeature(feature.id)}
+              className={cn(
+                CHIP,
+                selectedFeatureIds.includes(feature.id)
+                  ? "border-manago-teal-dark bg-manago-chip"
+                  : "border-border bg-white hover:border-manago-teal"
+              )}
+            >
+              {feature.label}
+            </button>
           ))}
         </div>
       </section>
 
-      {/* Notice */}
-      <section className="mx-4 rounded-2xl bg-manago-notice p-5">
+      <section className="mx-4 rounded-2xl bg-manago-notice p-4">
         <p className="text-center text-sm font-medium text-manago-notice-text">
-          Every submission is reviewed by our team before going live.
+          Every submission is reviewed before going live.
         </p>
       </section>
 
-      {/* Submit */}
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center px-4">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="rounded-2xl bg-manago-teal-dark px-10 py-4 font-semibold text-white disabled:opacity-60"
+          className="w-full max-w-sm rounded-2xl bg-manago-teal-dark px-10 py-4 font-semibold text-white transition-colors hover:bg-manago-teal disabled:opacity-60"
         >
           {submitting ? "Submitting..." : "Submit"}
         </button>

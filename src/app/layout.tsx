@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
-import { ericaOne } from "@/lib/fonts";
+import { ericaOne, plusJakarta } from "@/lib/fonts";
 import { AuthRedirectFix } from "@/components/auth-redirect-fix";
 import { NavMenuProvider } from "@/components/nav-menu";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "ManaGo!",
@@ -22,10 +20,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`light h-full font-sans antialiased ${inter.variable} ${ericaOne.variable}`}
+      className={`light h-full font-sans antialiased ${plusJakarta.variable} ${ericaOne.variable}`}
       style={{ colorScheme: "light" }}
     >
-      <body className="flex min-h-full flex-col bg-gray-50 text-manago-navy">
+      <body className="flex min-h-full flex-col bg-background text-foreground">
         <ClerkProvider
           signInForceRedirectUrl="/nearby"
           signUpForceRedirectUrl="/nearby"
@@ -33,6 +31,7 @@ export default function RootLayout({
           <AuthRedirectFix />
           <ViewTransitions>
             <NavMenuProvider>{children}</NavMenuProvider>
+            <Toaster />
           </ViewTransitions>
         </ClerkProvider>
       </body>

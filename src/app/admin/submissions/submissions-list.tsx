@@ -1,134 +1,131 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
-
-export type Submission = {
-  id: number;
-  name: string;
-  amenity_type_id: number;
-  address: string;
-  building_name: string | null;
-  floor: string | null;
-  description: string | null;
-  photo_url: string | null;
-  latitude: number;
-  longitude: number;
-  open_time: string | null;
-  close_time: string | null;
-  is_24_hours: boolean;
-  is_accessible: boolean;
-  feature_ids: number[];
-  status: string;
-};
+import { useState } from "react"
+import { toast } from "sonner"
+import {
+  approveFacilitySubmission,
+  rejectFacilitySubmission,
+} from "@/app/actions/submissions"
+import type { FacilitySubmission } from "@/types/submission"
 
 type SubmissionsListProps = {
-  initialSubmissions: Submission[];
-};
+  initialSubmissions: FacilitySubmission[]
+}
 
+function formatSubmissionHours(submission: FacilitySubmission): string | null {
+  if (submission.is_24_hours) return "Open 24 hours"
+  if (submission.open_time && submission.close_time) {
+    return `${submission.open_time} – ${submission.close_time}`
+  }
+  return null
+}
+
+/** Admin list of pending facility submissions with approve / reject actions. */
 export default function SubmissionsList({
   initialSubmissions,
 }: SubmissionsListProps) {
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [submissions, setSubmissions] = useState(initialSubmissions)
+  const [busyId, setBusyId] = useState<number | null>(null)
 
-  async function approveSubmission(submission: Submission) {
-    const { error: insertError } = await supabase.from("facilities").insert({
-      name: submission.name,
-      amenity_type_id: submission.amenity_type_id,
-      latitude: submission.latitude,
-      longitude: submission.longitude,
-      address: submission.address,
-      building_name: submission.building_name,
-      floor: submission.floor,
-      description: submission.description,
-      photo_url: submission.photo_url,
-      is_accessible: submission.is_accessible,
-      is_verified: true,
-      status: "active",
-    });
-
-    if (insertError) {
-      console.error(insertError);
-      alert(insertError.message);
-      return;
-    }
-
-    const { error: updateError } = await supabase
-      .from("facility_submissions")
-      .update({ status: "approved" })
-      .eq("id", submission.id);
-
-    if (updateError) {
-      console.error(updateError);
-      alert(updateError.message);
-      return;
-    }
-
-    setSubmissions((prev) => prev.filter((item) => item.id !== submission.id));
-  }
-
-  async function rejectSubmission(id: number) {
-    const { error } = await supabase
-      .from("facility_submissions")
-      .update({ status: "rejected" })
-      .eq("id", id);
+  /** Approve by id; server reloads the row so client fields are not trusted. */
+  async function approveSubmission(id: number) {
+    setBusyId(id)
+    const { error } = await approveFacilitySubmission(id)
+    setBusyId(null)
 
     if (error) {
-      alert(error.message);
-      return;
+      toast.error(error)
+      return
     }
 
-    setSubmissions((prev) => prev.filter((item) => item.id !== id));
+    setSubmissions((prev) => prev.filter((item) => item.id !== id))
+    toast.success("Facility approved.")
+  }
+
+  /** Mark a pending submission as rejected. */
+  async function rejectSubmission(id: number) {
+    setBusyId(id)
+    const { error } = await rejectFacilitySubmission(id)
+    setBusyId(null)
+
+    if (error) {
+      toast.error(error)
+      return
+    }
+
+    setSubmissions((prev) => prev.filter((item) => item.id !== id))
+    toast.success("Submission rejected.")
   }
 
   if (submissions.length === 0) {
     return (
       <p className="text-muted-foreground">No pending submissions right now.</p>
-    );
+    )
   }
 
   return (
     <>
-      {submissions.map((submission) => (
-        <div key={submission.id} className="mb-6 rounded-xl border p-5">
-          <h2 className="text-xl font-semibold">{submission.name}</h2>
+      {submissions.map((submission) => {
+        const hours = formatSubmissionHours(submission)
 
-          <p>{submission.address}</p>
-
-          {submission.building_name && (
-            <p>Building: {submission.building_name}</p>
-          )}
-
-          {submission.floor && <p>Floor: {submission.floor}</p>}
-
-          {submission.description && <p>{submission.description}</p>}
-
-          {submission.photo_url && (
+        return (
+        <div
+          key={submission.id}
+          className="mb-6 rounded-xl border border-border bg-card p-5 shadow-sm"
+        >
+          <h2 className="text-xl font-semibold text-manago-navy">
+            {submission.name}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {submission.address}
+          </p>
+          {submission.building_name ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Building: {submission.building_name}
+            </p>
+          ) : null}
+          {submission.floor ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Floor: {submission.floor}
+            </p>
+          ) : null}
+          {hours ? (
+            <p className="mt-1 text-sm text-muted-foreground">Hours: {hours}</p>
+          ) : null}
+          {submission.description ? (
+            <p className="mt-3 text-sm text-foreground/80">
+              {submission.description}
+            </p>
+          ) : null}
+          {submission.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element -- matches facility cards elsewhere
             <img
               src={submission.photo_url}
               className="mt-4 h-56 w-full rounded-lg object-cover"
               alt={submission.name}
             />
-          )}
-
+          ) : null}
           <div className="mt-4 flex gap-3">
             <button
-              onClick={() => approveSubmission(submission)}
-              className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+              type="button"
+              disabled={busyId === submission.id}
+              onClick={() => approveSubmission(submission.id)}
+              className="rounded-lg bg-manago-teal px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
             >
               Approve
             </button>
-
             <button
+              type="button"
+              disabled={busyId === submission.id}
               onClick={() => rejectSubmission(submission.id)}
-              className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-manago-navy disabled:opacity-60"
             >
               Reject
             </button>
           </div>
         </div>
-      ))}
+        )
+      })}
     </>
-  );
+  )
 }

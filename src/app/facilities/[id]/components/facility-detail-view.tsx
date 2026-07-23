@@ -1,7 +1,6 @@
 "use client"
 
-import { Link } from "next-view-transitions"
-import { useRouter } from "next/navigation"
+import { Link, useTransitionRouter } from "next-view-transitions"
 import {
   AlertTriangle,
   ChevronLeft,
@@ -12,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { MenuToggle } from "@/components/nav-menu"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
-import type { Facility } from "@/types/facility"
+import type { AmenityType, Facility } from "@/types/facility"
 import type { Review } from "@/types/review"
 import { getAggregateRating, formatReviewDate } from "@/lib/reviews"
 import {
@@ -20,13 +19,18 @@ import {
   getDataQualityWarning,
   getFacilityDataQuality,
   getFacilityLocation,
+  getFacilityPhotoUrl,
   getFacilitySummary,
   getFacilityTags,
 } from "@/lib/facility-helpers"
+import { DeleteReviewButton } from "./delete-review-button"
+import { FacilityAdminPanel } from "./facility-admin-panel"
 
 type FacilityDetailViewProps = {
   facility: Facility
   reviews: Review[]
+  isAdmin?: boolean
+  amenityTypes?: AmenityType[]
 }
 
 function StarRating({
@@ -45,8 +49,8 @@ function StarRating({
           key={i}
           className={`${starSize} ${
             i < Math.round(rating)
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-gray-300"
+              ? "fill-manago-orange text-manago-orange"
+              : "text-border"
           }`}
         />
       ))}
@@ -57,9 +61,11 @@ function StarRating({
 export default function FacilityDetailView({
   facility,
   reviews,
+  isAdmin = false,
+  amenityTypes = [],
 }: FacilityDetailViewProps) {
-  const router = useRouter()
-  const photo = facility.photo_url ?? "/toilet.jpg"
+  const router = useTransitionRouter()
+  const photo = getFacilityPhotoUrl(facility)
   const typeLabel = facility.amenity_types?.label ?? "Facility"
   const tags = getFacilityTags(facility)
   const location = getFacilityLocation(facility)
@@ -72,8 +78,9 @@ export default function FacilityDetailView({
     getAggregateRating(reviews)
 
   return (
-    <div className="min-h-full bg-gray-50 pb-28">
+    <div className="min-h-full bg-background pb-28 text-foreground">
       <div className="relative h-52 w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote facility photo */}
         <img
           src={photo}
           alt={facility.name}
@@ -91,7 +98,7 @@ export default function FacilityDetailView({
           className="absolute left-[4.25rem] top-4 flex size-10 items-center justify-center rounded-full bg-white/95 shadow-md"
           aria-label="Go back"
         >
-          <ChevronLeft className="size-6 text-gray-800" />
+          <ChevronLeft className="size-6 text-manago-navy" />
         </Link>
 
         <span className="absolute right-4 top-4 rounded-full bg-manago-teal px-3 py-1 text-sm font-medium text-white shadow-md">
@@ -100,9 +107,9 @@ export default function FacilityDetailView({
       </div>
 
       <div className="relative z-10 -mt-6 px-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h1 className="text-xl font-bold text-gray-900">{facility.name}</h1>
-          <p className="mt-1 text-sm text-gray-500">{location}</p>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <h1 className="text-xl font-bold text-manago-navy">{facility.name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{location}</p>
 
           {qualityWarning && (
             <div
@@ -118,22 +125,24 @@ export default function FacilityDetailView({
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <StarRating rating={averageRating} />
               {reviewCount > 0 ? (
                 <>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-manago-navy">
                     {averageRating}
                   </span>
-                  <span className="text-gray-400">({reviewCount})</span>
+                  <span className="text-muted-foreground/70">
+                    ({reviewCount})
+                  </span>
                 </>
               ) : (
-                <span className="text-gray-400">No reviews yet</span>
+                <span className="text-muted-foreground/70">No reviews yet</span>
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <MapPin className="size-4 text-gray-400" />
+              <MapPin className="size-4 text-muted-foreground/70" />
               <span>{location}</span>
             </div>
           </div>
@@ -147,24 +156,30 @@ export default function FacilityDetailView({
           )}
 
           {summary ? (
-            <p className="mt-4 text-sm leading-relaxed text-gray-600">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {summary}
             </p>
           ) : (
-            <p className="mt-4 text-sm leading-relaxed text-gray-500">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               No details yet for this location.
             </p>
           )}
 
-          <p className="mt-4 text-xs text-gray-400">
-            {facility.is_verified ? "Verified" : "Unverified"} •{" "}
+          <p className="mt-4 text-xs text-muted-foreground/70">
             {formatUpdatedAt(facility.created_at)}
           </p>
         </div>
 
+        {isAdmin ? (
+          <FacilityAdminPanel
+            facility={facility}
+            amenityTypes={amenityTypes}
+          />
+        ) : null}
+
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
+            <h2 className="text-lg font-bold text-manago-navy">Reviews</h2>
             <Link
               href={reviewHref}
               className="text-sm font-medium text-manago-teal hover:text-manago-teal-dark"
@@ -174,7 +189,7 @@ export default function FacilityDetailView({
           </div>
 
           {reviews.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-gray-200 bg-white p-4 text-center text-sm text-gray-400">
+            <p className="rounded-2xl border border-dashed border-border bg-card p-4 text-center text-sm text-muted-foreground">
               No reviews yet. Be the first to leave one!
             </p>
           ) : (
@@ -182,11 +197,18 @@ export default function FacilityDetailView({
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                  className="rounded-2xl border border-border bg-card p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <StarRating rating={review.rating} />
-                    <span className="shrink-0 text-xs text-gray-400">
+                    <div className="min-w-0">
+                      <StarRating rating={review.rating} />
+                      {review.profiles?.display_name?.trim() ? (
+                        <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
+                          {review.profiles.display_name.trim()}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground/70">
                       {formatReviewDate(review.created_at)}
                     </span>
                   </div>
@@ -202,10 +224,17 @@ export default function FacilityDetailView({
                   )}
 
                   {review.comment && (
-                    <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                       {review.comment}
                     </p>
                   )}
+
+                  {isAdmin ? (
+                    <DeleteReviewButton
+                      reviewId={review.id}
+                      facilityId={facility.id}
+                    />
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -213,7 +242,7 @@ export default function FacilityDetailView({
         </section>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card px-4 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg gap-3">
           <Button
             asChild
