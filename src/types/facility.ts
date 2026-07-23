@@ -23,6 +23,12 @@ export type Facility = {
   amenity_types: AmenityType | null
 }
 
-export type FacilityWithDistance = Facility & {
-  distanceKm: number
+export type FacilityRatingSummary = {
+  averageRating: number
+  reviewCount: number
 }
+
+export type FacilityWithDistance = Facility &
+  FacilityRatingSummary & {
+    distanceKm: number
+  }
