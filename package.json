@@ -15,6 +15,8 @@
     "ci": "npm run lint && npm run typecheck && npm run build",
     "lighthouse": "lhci autorun",
     "clean-data": "node scripts/clean-facilities.mjs",
+    "prune-data": "node scripts/prune-facilities.mjs",
+    "scrape-photos": "node scripts/scrape-facility-photos.mjs",
     "seed": "node scripts/seed-facilities.mjs"
   },
   "dependencies": {
@@ -23,6 +25,7 @@
     "@next/third-parties": "^16.2.9",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.20.0",
@@ -33,12 +36,14 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.11.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@lhci/cli": "0.14.0",
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
     "@types/react": "^19",

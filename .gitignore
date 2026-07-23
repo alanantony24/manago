@@ -18,6 +18,8 @@
 # misc
 .DS_Store
 *.pem
+tmp-shot.*
+tmp-*
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -33,6 +35,12 @@ yarn-error.log*
 next-env.d.ts
 #drafts
 **/draft*.txt
+
+# demo scraped facility photos (copyrighted; regenerate with npm run scrape-photos)
+/public/facility-photos/**
+!/public/facility-photos/
+!/public/facility-photos/*/
+!/public/facility-photos/**/.gitkeep
 
 # local Lighthouse CI reports
 /.lighthouseci/
