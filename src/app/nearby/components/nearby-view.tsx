@@ -1,16 +1,23 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import {
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react"
 import dynamic from "next/dynamic"
-import { Link } from "next-view-transitions"
 import {
   Search,
   LayoutGrid,
   GlassWater,
   Toilet,
   Baby,
-  ArrowDownWideNarrow,
-  Navigation,
+  Shapes,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
 } from "lucide-react"
 import {
   InputGroup,
@@ -19,16 +26,20 @@ import {
 } from "@/components/ui/input-group"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import FacilityCard from "./facility-card"
 import { AppPageHeader } from "@/components/app-page-header"
-import type { Facility } from "@/types/facility"
+import type { Facility, FacilityRatingSummary } from "@/types/facility"
+import { isPrimaryAmenitySlug } from "@/lib/amenity"
 import { getDistanceKm } from "@/lib/geo"
+
+const PAGE_SIZE = 20
 
 const FacilityMap = dynamic(() => import("./map"), {
   ssr: false,
   loading: () => (
     <div
-      className="flex h-64 w-full items-center justify-center rounded-md bg-gray-100 text-sm text-gray-600"
+      className="flex h-64 w-full items-center justify-center rounded-md bg-muted text-sm text-muted-foreground"
       role="status"
     >
       Loading map…
@@ -36,8 +47,12 @@ const FacilityMap = dynamic(() => import("./map"), {
   ),
 })
 
-type FilterKey = "all" | "water_cooler" | "toilet_with_bidet" | "nursing_room"
-type SortKey = "distance" | "name"
+type FilterKey =
+  | "all"
+  | "water_cooler"
+  | "toilet_with_bidet"
+  | "nursing_room"
+  | "others"
 
 const FILTERS: { key: FilterKey; label: string; icon: ReactNode }[] = [
   { key: "all", label: "All", icon: <LayoutGrid /> },
@@ -48,30 +63,40 @@ const FILTERS: { key: FilterKey; label: string; icon: ReactNode }[] = [
     icon: <Toilet />,
   },
   { key: "nursing_room", label: "Nursing Rooms", icon: <Baby /> },
+  { key: "others", label: "Others", icon: <Shapes /> },
 ]
 
 type NearbyViewProps = {
   facilities: Facility[]
+  ratingsByFacilityId: Record<string, FacilityRatingSummary>
 }
 
-export default function NearbyView({ facilities }: NearbyViewProps) {
+export default function NearbyView({
+  facilities,
+  ratingsByFacilityId,
+}: NearbyViewProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   )
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all")
-  const [sortKey, setSortKey] = useState<SortKey>("distance")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
     null
   )
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageInput, setPageInput] = useState("1")
+  const listTopRef = useRef<HTMLDivElement>(null)
 
   const filteredFacilities = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
 
     return facilities
       .filter((facility) => {
-        if (activeFilter !== "all") {
-          const slug = facility.amenity_types?.slug
+        const slug = facility.amenity_types?.slug
+
+        if (activeFilter === "others") {
+          if (isPrimaryAmenitySlug(slug)) return false
+        } else if (activeFilter !== "all") {
           if (slug !== activeFilter) return false
         }
 
@@ -92,34 +117,70 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
               facility.longitude
             )
           : Infinity
+        const rating = ratingsByFacilityId[facility.id]
 
-        return { ...facility, distanceKm }
-      })
-      .sort((a, b) => {
-        if (sortKey === "name") {
-          return a.name.localeCompare(b.name)
+        return {
+          ...facility,
+          distanceKm,
+          averageRating: rating?.averageRating ?? 0,
+          reviewCount: rating?.reviewCount ?? 0,
         }
-
-        return a.distanceKm - b.distanceKm
       })
-  }, [facilities, activeFilter, searchQuery, userLocation, sortKey])
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+  }, [facilities, ratingsByFacilityId, activeFilter, searchQuery, userLocation])
 
-  function toggleSort() {
-    setSortKey((current) => (current === "distance" ? "name" : "distance"))
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredFacilities.length / PAGE_SIZE)
+  )
+  const safePage = Math.min(Math.max(1, currentPage), totalPages)
+  const pageStart = (safePage - 1) * PAGE_SIZE
+  const pageEnd = Math.min(
+    pageStart + PAGE_SIZE,
+    filteredFacilities.length
+  )
+  const pagedFacilities = filteredFacilities.slice(pageStart, pageEnd)
+
+  /** Jump to a page and keep the page input in sync. */
+  function goToPage(page: number) {
+    const next = Math.min(Math.max(1, page), totalPages)
+    setCurrentPage(next)
+    setPageInput(String(next))
+    listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  /** Reset to page 1 when the filter or search changes. */
+  function resetToFirstPage() {
+    setCurrentPage(1)
+    setPageInput("1")
+  }
+
+  /** Apply a typed page number from the jump form. */
+  function handleJumpToPage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const parsed = Number.parseInt(pageInput, 10)
+    if (Number.isNaN(parsed)) {
+      setPageInput(String(safePage))
+      return
+    }
+    goToPage(parsed)
   }
 
   return (
-    <div className="w-full max-w-full min-h-screen overflow-x-hidden bg-gray-50 text-manago-navy">
+    <div className="w-full max-w-full min-h-screen overflow-x-hidden bg-background text-foreground">
       <AppPageHeader>
         <InputGroup className="h-10 w-full rounded-full border-0 bg-white shadow-sm sm:h-11">
-          <InputGroupAddon className="pl-3.5 text-gray-500 sm:pl-4">
+          <InputGroupAddon className="pl-3.5 text-muted-foreground sm:pl-4">
             <Search className="size-4 sm:size-[1.125rem]" />
           </InputGroupAddon>
           <InputGroupInput
-            className="text-sm text-manago-navy placeholder:text-gray-500 sm:text-base"
+            className="text-sm text-manago-navy placeholder:text-muted-foreground sm:text-base"
             placeholder="What are you looking for?"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              resetToFirstPage()
+            }}
           />
         </InputGroup>
       </AppPageHeader>
@@ -135,9 +196,12 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
                 className={
                   activeFilter === key
                     ? "border-manago-teal bg-manago-teal text-white hover:bg-manago-teal-dark hover:text-white"
-                    : "border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
+                    : "border-border bg-white text-manago-navy hover:bg-muted"
                 }
-                onClick={() => setActiveFilter(key)}
+                onClick={() => {
+                  setActiveFilter(key)
+                  resetToFirstPage()
+                }}
               >
                 {icon} {label}
               </Button>
@@ -153,53 +217,107 @@ export default function NearbyView({ facilities }: NearbyViewProps) {
           onFacilitySelect={setSelectedFacilityId}
         />
 
-        <div className="flex flex-row flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-bold text-manago-navy">Nearby You</h3>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              className="bg-manago-teal text-white hover:bg-manago-teal-dark"
-              onClick={toggleSort}
-              aria-label={
-                sortKey === "distance"
-                  ? "Currently sorted by distance. Switch to name."
-                  : "Currently sorted by name. Switch to distance."
-              }
-            >
-              <ArrowDownWideNarrow />
-              {sortKey === "distance" ? "Distance" : "Name"}
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="border-gray-300 bg-white text-manago-navy hover:bg-gray-50"
-            >
-              <Link href="/locate">
-                <Navigation />
-                Locate
-              </Link>
-            </Button>
-          </div>
-        </div>
+        <h3 className="text-lg font-bold text-manago-navy">Nearby You</h3>
 
-        {!userLocation && sortKey === "distance" && (
-          <p className="text-xs text-gray-500">
+        {!userLocation && (
+          <p className="text-xs text-muted-foreground">
             Allow location access to sort by distance. Until then, results keep
             the database order.
           </p>
         )}
 
-        <div className="flex w-full min-w-0 flex-col gap-4">
+        <div ref={listTopRef} className="flex w-full min-w-0 flex-col gap-4">
           {filteredFacilities.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-600">
+            <p className="py-8 text-center text-sm text-muted-foreground">
               {facilities.length === 0
                 ? "No facilities loaded yet. Seed your Supabase database to see amenities here."
                 : "No facilities match your search or filter."}
             </p>
           ) : (
-            filteredFacilities.map((facility) => (
-              <FacilityCard key={facility.id} facility={facility} />
-            ))
+            <>
+              <p className="text-center text-xs text-muted-foreground">
+                Showing {pageStart + 1}–{pageEnd} of {filteredFacilities.length}
+              </p>
+
+              {pagedFacilities.map((facility) => (
+                <FacilityCard key={facility.id} facility={facility} />
+              ))}
+
+              {totalPages > 1 && (
+                <nav
+                  aria-label="Facility list pages"
+                  className="flex w-full items-center justify-center border-t border-border pt-4"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-border bg-white text-manago-navy hover:bg-muted"
+                      disabled={safePage <= 1}
+                      onClick={() => goToPage(1)}
+                      aria-label="Go to first page"
+                    >
+                      <ChevronsLeft />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-border bg-white text-manago-navy hover:bg-muted"
+                      disabled={safePage <= 1}
+                      onClick={() => goToPage(safePage - 1)}
+                      aria-label="Go to previous page"
+                    >
+                      <ChevronLeft />
+                    </Button>
+
+                    <form
+                      onSubmit={handleJumpToPage}
+                      className="mx-1 flex items-center gap-1.5 text-sm text-manago-navy"
+                    >
+                      <label htmlFor="nearby-page-jump" className="sr-only">
+                        Page number
+                      </label>
+                      <Input
+                        id="nearby-page-jump"
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        inputMode="numeric"
+                        value={pageInput}
+                        onChange={(e) => setPageInput(e.target.value)}
+                        onBlur={() => {
+                          const parsed = Number.parseInt(pageInput, 10)
+                          if (Number.isNaN(parsed)) {
+                            setPageInput(String(safePage))
+                            return
+                          }
+                          goToPage(parsed)
+                        }}
+                        className="h-7 w-12 border-border bg-white px-1 text-center tabular-nums text-manago-navy [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        aria-label={`Page number, 1 to ${totalPages}`}
+                      />
+                      <span className="whitespace-nowrap text-muted-foreground">
+                        of {totalPages}
+                      </span>
+                    </form>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-border bg-white text-manago-navy hover:bg-muted"
+                      disabled={safePage >= totalPages}
+                      onClick={() => goToPage(safePage + 1)}
+                      aria-label="Go to next page"
+                    >
+                      <ChevronRight />
+                    </Button>
+                  </div>
+                </nav>
+              )}
+            </>
           )}
         </div>
       </div>

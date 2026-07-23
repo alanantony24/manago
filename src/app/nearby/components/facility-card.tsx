@@ -1,12 +1,12 @@
 "use client"
 
 import { useTransitionRouter } from "next-view-transitions"
-import { MapPin, FileText, Navigation, AlertTriangle } from "lucide-react"
+import { MapPin, Navigation, AlertTriangle, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { FacilityWithDistance } from "@/types/facility"
 import { formatDistance } from "@/lib/geo"
-import { getFacilityDataQuality, getFacilityNotes } from "@/lib/facility-helpers"
+import { getFacilityDataQuality, getFacilityPhotoUrl } from "@/lib/facility-helpers"
 
 type FacilityCardProps = {
   facility: FacilityWithDistance
@@ -16,18 +16,17 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
   const router = useTransitionRouter()
   const tags: string[] = []
   const typeName = facility.amenity_types?.label
-  const notes = getFacilityNotes(facility.description)
   const dataQuality = getFacilityDataQuality(facility)
 
   if (typeName) tags.push(typeName)
   if (facility.is_accessible) tags.push("PWD Friendly")
-  if (facility.is_verified) tags.push("Verified")
 
   const navigateUrl = `/locate?facilityId=${facility.id}`
+  const hasReviews = facility.reviewCount > 0
 
   return (
     <article
-      className="flex w-full min-w-0 cursor-pointer flex-row gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-[border-color,box-shadow] hover:border-manago-teal/40 hover:shadow-md"
+      className="flex w-full min-w-0 cursor-pointer flex-row gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-[border-color,box-shadow] hover:border-manago-teal/40 hover:shadow-md"
       onClick={() => router.push(`/facilities/${facility.id}`)}
       role="link"
       tabIndex={0}
@@ -37,9 +36,10 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
         }
       }}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element -- remote / mixed facility photos */}
       <img
         className="size-24 shrink-0 rounded-lg object-cover"
-        src={facility.photo_url ?? "/toilet.jpg"}
+        src={getFacilityPhotoUrl(facility)}
         alt={facility.name}
       />
 
@@ -65,29 +65,42 @@ export default function FacilityCard({ facility }: FacilityCardProps) {
 
         {facility.address && (
           <div className="space-y-0.5">
-            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               <MapPin className="size-3" />
               Location
             </p>
-            <p className="text-sm leading-snug text-gray-700">
+            <p className="text-sm leading-snug text-foreground">
               {facility.address}
             </p>
           </div>
         )}
 
-        {notes && (
-          <div className="space-y-0.5">
-            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              <FileText className="size-3" />
-              Details
-            </p>
-            <p className="line-clamp-2 text-sm leading-snug text-gray-600">
-              {notes}
-            </p>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="flex" aria-hidden={!hasReviews}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={`size-3.5 ${
+                  hasReviews && i < Math.round(facility.averageRating)
+                    ? "fill-manago-orange text-manago-orange"
+                    : "text-border"
+                }`}
+              />
+            ))}
           </div>
-        )}
-
-        <p className="text-xs text-gray-500">No reviews yet</p>
+          {hasReviews ? (
+            <>
+              <span className="font-medium text-manago-navy">
+                {facility.averageRating}
+              </span>
+              <span className="text-muted-foreground/70">
+                ({facility.reviewCount})
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">No reviews yet</span>
+          )}
+        </div>
 
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

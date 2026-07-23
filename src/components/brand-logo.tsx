@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils"
 import { ericaOne } from "@/lib/fonts"
-import { MANAGO_BRAND_ORANGE, MANAGO_NAVY } from "@/lib/brand-colors"
 import { ManaGoPinIcon } from "@/components/manago-pin-icon"
 
 type BrandLogoProps = {
@@ -22,12 +21,13 @@ export default function BrandLogo({
         )}
       >
         <span
-          className={variant === "light" ? "text-white" : undefined}
-          style={variant === "dark" ? { color: MANAGO_NAVY } : undefined}
+          className={
+            variant === "light" ? "text-white" : "text-manago-navy"
+          }
         >
           ManaGo
         </span>
-        <span style={{ color: MANAGO_BRAND_ORANGE }}>!</span>
+        <span className="text-manago-orange">!</span>
       </h1>
     </div>
   )

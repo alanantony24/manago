@@ -1,3 +1,4 @@
+/** Haversine distance in kilometers between two WGS84 points. */
 export function getDistanceKm(
   lat1: number,
   lon1: number,
@@ -27,13 +28,14 @@ export function getDistanceMeters(
   return getDistanceKm(lat1, lon1, lat2, lon2) * 1000
 }
 
+/** Format kilometers for UI (meters under 1 km). */
 export function formatDistance(km: number): string {
   if (!Number.isFinite(km)) return "—"
   if (km < 1) return `${Math.round(km * 1000)} m`
   return `${km.toFixed(1)} km`
 }
 
-/** Compass bearing in degrees (0-360) from point 1 to point 2. */
+/** Compass bearing in degrees (0–360) from point 1 to point 2. */
 export function getBearing(
   lat1: number,
   lon1: number,
@@ -53,5 +55,5 @@ export function getBearing(
     Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ)
 
   const θ = Math.atan2(y, x)
-  return ((toDeg(θ) + 360) % 360)
+  return (toDeg(θ) + 360) % 360
 }

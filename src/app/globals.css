@@ -107,47 +107,40 @@
   }
 }
 
+/* Single route transition: short fade + slight lift (GPU-friendly). */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.12s;
-  animation-timing-function: ease-out;
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 ::view-transition-old(root) {
-  animation-name: route-fade-out;
+  animation-name: route-out;
 }
 
 ::view-transition-new(root) {
-  animation-name: route-fade-in;
+  animation-name: route-in;
 }
 
-@keyframes route-fade-in {
+@keyframes route-in {
   from {
     opacity: 0;
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes route-fade-out {
+@keyframes route-out {
   from {
     opacity: 1;
+    transform: translateY(0);
   }
   to {
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-
-  .nav-drawer-link {
-    opacity: 1 !important;
-    transform: none !important;
+    transform: translateY(-4px);
   }
 }
 
@@ -163,4 +156,159 @@
 .nav-drawer-link-visible {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* Auth pages: diagonal map drift, top-left → bottom-right (infinite). */
+@keyframes auth-map-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(9%, 7%, 0);
+  }
+}
+
+.auth-map-drift {
+  will-change: transform;
+  animation: auth-map-drift 32s ease-in-out infinite alternate;
+}
+
+/*
+  Clerk’s internal stylesheet sets an explicit ~fit-content width on the
+  sign-in/up root that beats Tailwind `w-full`, leaving a half-width form
+  stuck on the left of the mint panel. Force it to fill the panel.
+*/
+.auth-shell-card .cl-rootBox,
+.auth-shell-card .cl-cardBox,
+.auth-shell-card .cl-card,
+.auth-shell-card .cl-main,
+.auth-shell-card .cl-socialButtons,
+.auth-shell-card .cl-form {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/*
+  Clerk cards use overflow:hidden and inputs use overflow:clip, which chops
+  the focus halo on the left/right rounded edges. Prefer a clean border.
+*/
+.auth-shell-card {
+  /* Clerk’s focus ring is a 4px box-shadow via this token — kill it. */
+  --clerk-color-ring: transparent;
+}
+
+.auth-shell-card .cl-cardBox,
+.auth-shell-card .cl-card,
+.auth-shell-card .cl-scrollBox,
+.auth-shell-card .cl-main,
+.auth-shell-card .cl-form,
+.auth-shell-card .cl-formFieldRow,
+.auth-shell-card .cl-formField,
+.auth-shell-card .cl-formFieldInputGroup {
+  overflow: visible !important;
+}
+
+/* Clerk draws “borders” with box-shadow; those get clipped into ugly side ticks. */
+.auth-shell-card input,
+.auth-shell-card input.cl-input,
+.auth-shell-card input.cl-formFieldInput,
+.auth-shell-card .cl-input,
+.auth-shell-card .cl-formFieldInput {
+  overflow: visible !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+  border-color: var(--border) !important;
+  background-color: #ffffff !important;
+}
+
+.auth-shell-card input:focus,
+.auth-shell-card input:focus-visible,
+.auth-shell-card input:focus-within,
+.auth-shell-card input[data-variant]:focus,
+.auth-shell-card input[data-variant]:focus-within,
+.auth-shell-card input[data-variant="default"]:focus,
+.auth-shell-card input[data-variant="default"]:focus-within,
+.auth-shell-card .cl-input:focus,
+.auth-shell-card .cl-input:focus-visible,
+.auth-shell-card .cl-input:focus-within,
+.auth-shell-card .cl-formFieldInput:focus,
+.auth-shell-card .cl-formFieldInput:focus-visible,
+.auth-shell-card .cl-formFieldInput:focus-within {
+  border-color: var(--color-manago-teal) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Facility submission celebration */
+@keyframes celebration-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes celebration-check {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes celebration-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+.celebration-pop {
+  animation: celebration-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.celebration-check {
+  animation: celebration-check 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.celebration-ring {
+  animation: celebration-ring 1.1s ease-out 0.35s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+  .nav-drawer-link {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .auth-map-drift {
+    animation: none;
+  }
+
+  .celebration-pop,
+  .celebration-check,
+  .celebration-ring {
+    animation: none;
+  }
 }

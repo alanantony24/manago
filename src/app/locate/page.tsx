@@ -1,11 +1,14 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import MapView, { type MapViewHandle } from '@/app/components/MapView';
+import { useSearchParams } from 'next/navigation';
+import { useTransitionRouter } from 'next-view-transitions';
+import { toast } from 'sonner';
+import MapView, { type MapViewHandle } from '@/app/locate/components/map-view';
 import { AppPageHeader } from '@/components/app-page-header';
 import { getDistanceMeters } from '@/lib/geo';
 import { supabase } from '@/lib/supabase';
+import type { Facility as FacilityRow } from '@/types/facility';
 import {
   Footprints,
   Bike,
@@ -18,12 +21,7 @@ import {
   ArrowUp,
 } from 'lucide-react';
 
-interface Facility {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-}
+type Facility = Pick<FacilityRow, 'id' | 'name' | 'latitude' | 'longitude'>;
 
 type TravelMode = 'walking' | 'cycling' | 'driving';
 
@@ -56,17 +54,16 @@ function formatManeuverDistance(m?: number) {
 }
 
 function LocatePageInner() {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const searchParams = useSearchParams();
   const facilityId = searchParams.get('facilityId');
   const mapRef = useRef<MapViewHandle>(null);
 
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [specificFacility, setSpecificFacility] = useState<Facility | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [routeInfo, setRouteInfo] = useState<{
     direction: string;
     time: string;
@@ -93,7 +90,8 @@ function LocatePageInner() {
   useEffect(() => {
     if (!navigator.geolocation) {
       const timeoutId = window.setTimeout(() => {
-        setLocationError('Geolocation is not supported by your browser.');
+        toast.info('Geolocation is not supported by your browser.');
+        setStatusMessage('Location unavailable');
         setLoading(false);
       }, 0);
       return () => window.clearTimeout(timeoutId);
@@ -102,10 +100,14 @@ function LocatePageInner() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setUserLocation([position.coords.longitude, position.coords.latitude]);
+        setStatusMessage(null);
         setLoading(false);
       },
       () => {
-        setLocationError('Unable to retrieve your location. Please allow location access.');
+        toast.info(
+          'Unable to retrieve your location. Please allow location access.'
+        );
+        setStatusMessage('Waiting for location access…');
         setLoading(false);
       },
       {
@@ -135,7 +137,8 @@ function LocatePageInner() {
         .single();
 
       if (error || !data) {
-        setFetchError('Could not find that facility.');
+        toast.error('Could not find that facility.');
+        setStatusMessage('Facility not found');
         return;
       }
 
@@ -158,12 +161,14 @@ function LocatePageInner() {
         .eq('status', 'active');
 
       if (error) {
-        setFetchError(`Failed to fetch facilities: ${error.message}`);
+        toast.error(`Failed to fetch facilities: ${error.message}`);
+        setStatusMessage('Could not load facilities');
         return;
       }
 
       if (!data || data.length === 0) {
-        setFetchError('No verified facilities found in the database.');
+        toast.info('No verified facilities found in the database.');
+        setStatusMessage('No facilities nearby');
         return;
       }
 
@@ -207,10 +212,6 @@ function LocatePageInner() {
   const hasArrived =
     arrived || (distanceToDestination !== null && distanceToDestination <= ARRIVAL_THRESHOLD_M);
 
-  const headerSubtitle = destinationFacility
-    ? `Navigating to ${destinationFacility.name}`
-    : 'Find Nearest Amenity';
-
   const handleExit = () => {
     router.push('/nearby');
   };
@@ -235,46 +236,44 @@ function LocatePageInner() {
   const primaryButtonLabel = !navigationStarted
     ? 'Start Navigation'
     : hasArrived
-      ? '✅ Arrived — Tap to Rate'
+      ? 'Arrived — Tap to Rate'
       : 'Mark as Arrived';
 
   const travelModeButtonClass = (mode: TravelMode) =>
-    `rounded-full p-3 transition-all duration-200 ${
+    `rounded-full p-3 transition-colors duration-200 ${
       travelMode === mode
-        ? 'bg-manago-teal text-white shadow-md scale-110'
-        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+        ? 'bg-manago-teal text-white shadow-md'
+        : 'bg-muted text-muted-foreground hover:bg-secondary'
     }`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-manago-navy">
-      <AppPageHeader subtitle={headerSubtitle} />
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <AppPageHeader />
 
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
-        <div className="bg-white px-5 py-5 shadow-sm">
+        <div className="border-b border-border bg-card px-5 py-5">
           <div className="flex items-center gap-3">
-            <Navigation className="h-5 w-5 text-blue-500" />
+            <Navigation className="h-5 w-5 text-manago-teal" />
             <div>
-              <p className="text-xs text-gray-500">Your Location</p>
-              <p className="font-semibold">Current Location</p>
+              <p className="text-xs text-muted-foreground">Your Location</p>
+              <p className="font-semibold text-manago-navy">Current Location</p>
             </div>
           </div>
 
-          <div className="my-2 ml-2 h-6 border-l-2 border-dashed border-gray-300" />
+          <div className="my-2 ml-2 h-6 border-l-2 border-dashed border-border" />
 
           <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-red-500" />
+            <MapPin className="h-5 w-5 text-manago-orange" />
             <div>
-              <p className="text-xs text-gray-500">Destination</p>
-              <p className="font-semibold">
+              <p className="text-xs text-muted-foreground">Destination</p>
+              <p className="font-semibold text-manago-navy">
                 {destinationFacility?.name ?? 'Finding destination...'}
               </p>
             </div>
           </div>
 
-          <p className="mt-4 text-sm text-gray-500">
-            {loading && 'Getting your location...'}
-            {locationError && locationError}
-            {fetchError && fetchError}
+          <p className="mt-4 text-sm text-muted-foreground">
+            {loading ? 'Getting your location...' : statusMessage}
           </p>
         </div>
 
@@ -324,11 +323,11 @@ function LocatePageInner() {
         </div>
 
         {routeInfo && destinationFacility && (
-          <div className="relative rounded-t-3xl bg-white p-6 shadow-2xl">
+          <div className="relative rounded-t-3xl border-t border-border bg-card p-6 shadow-xl">
             <button
               type="button"
               onClick={() => setShowExitConfirm(true)}
-              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200"
+              className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-secondary"
               aria-label="Exit navigation"
             >
               <X className="h-5 w-5" />
@@ -365,7 +364,7 @@ function LocatePageInner() {
               <button
                 type="button"
                 disabled
-                className="rounded-full bg-gray-100 p-3 text-gray-400 cursor-not-allowed"
+                className="cursor-not-allowed rounded-full bg-muted p-3 text-muted-foreground/50"
                 aria-label="Bus directions (coming soon)"
               >
                 <Bus className="h-6 w-6" />
@@ -373,18 +372,24 @@ function LocatePageInner() {
             </div>
 
             <div>
-              <h2 className="text-5xl font-bold">{routeInfo.time}</h2>
+              <h2 className="text-5xl font-bold text-manago-navy">
+                {routeInfo.time}
+              </h2>
               {routeInfo.arrivalTime && (
-                <p className="mt-1 text-gray-500">Arrive {routeInfo.arrivalTime}</p>
+                <p className="mt-1 text-muted-foreground">
+                  Arrive {routeInfo.arrivalTime}
+                </p>
               )}
-              {routeInfo.road && <p className="mt-2">Via {routeInfo.road}</p>}
-              <p className="text-gray-500">{routeInfo.distance}</p>
+              {routeInfo.road && (
+                <p className="mt-2 text-foreground">Via {routeInfo.road}</p>
+              )}
+              <p className="text-muted-foreground">{routeInfo.distance}</p>
             </div>
 
             <button
               type="button"
               onClick={handlePrimaryButton}
-              className="mt-6 w-full rounded-full bg-manago-teal py-4 font-bold text-white"
+              className="mt-6 w-full rounded-full bg-manago-teal py-4 font-bold text-white hover:bg-manago-teal-dark"
             >
               {primaryButtonLabel}
             </button>
@@ -398,23 +403,26 @@ function LocatePageInner() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-manago-navy">Exit navigation?</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Are you sure you want to exit? You&apos;ll be taken back to the home page.
+          <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-manago-navy">
+              Exit navigation?
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Are you sure you want to exit? You&apos;ll be taken back to the
+              home page.
             </p>
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="flex-1 rounded-full border border-gray-300 py-2.5 text-sm font-semibold text-manago-navy hover:bg-gray-50"
+                className="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-manago-navy hover:bg-muted"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleExit}
-                className="flex-1 rounded-full bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600"
+                className="flex-1 rounded-full bg-destructive py-2.5 text-sm font-semibold text-white hover:opacity-90"
               >
                 Exit
               </button>

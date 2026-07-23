@@ -2,10 +2,11 @@ import type { Facility } from "@/types/facility"
 
 export type DataQuality = "complete" | "partial" | "minimal"
 
-// When facilities are seeded, the description column is stored as a single
-// string with tagged metadata, for example:
-//   "Unisex toilet. | Region: East | Source: OSM | Data quality: partial"
-// This splits that string back into the human-readable notes and the tags.
+/**
+ * Seeded facilities pack metadata into `description` as:
+ *   "Notes… | Region: East | Source: OSM | Data quality: partial"
+ * This splits that string into notes + region + quality.
+ */
 function parseDescription(description: string | null) {
   let notes = ""
   let region: string | null = null
@@ -31,19 +32,21 @@ function parseDescription(description: string | null) {
   return { notes, region, quality }
 }
 
+/** Human-readable notes from a packed description (no metadata tags). */
 export function getFacilityNotes(description: string | null): string | null {
   return parseDescription(description).notes || null
 }
 
+/** Region tag from a packed description, if present. */
 export function getFacilityRegion(description: string | null): string | null {
   return parseDescription(description).region
 }
 
+/** Data completeness for UI warnings (stored tag or inferred). */
 export function getFacilityDataQuality(facility: Facility): DataQuality {
   const { notes, region, quality } = parseDescription(facility.description)
   if (quality) return quality
 
-  // Fallback for rows without a stored quality tag.
   const hasAddress = Boolean(facility.address?.trim())
   const hasDetails = notes.length > 15
 
@@ -52,6 +55,7 @@ export function getFacilityDataQuality(facility: Facility): DataQuality {
   return "partial"
 }
 
+/** User-facing warning for incomplete facility data, or null when complete. */
 export function getDataQualityWarning(quality: DataQuality): string | null {
   if (quality === "complete") return null
   if (quality === "partial") {
@@ -60,6 +64,7 @@ export function getDataQualityWarning(quality: DataQuality): string | null {
   return "Limited information available for this location. Only map coordinates are confirmed — please verify before visiting."
 }
 
+/** Short filter chips derived from amenity / accessibility flags. */
 export function getFacilityTags(facility: Facility): string[] {
   const tags: string[] = []
 
@@ -67,11 +72,11 @@ export function getFacilityTags(facility: Facility): string[] {
     tags.push("Bidet")
   }
   if (facility.is_accessible) tags.push("Accessible")
-  if (facility.is_verified) tags.push("Verified")
 
   return tags
 }
 
+/** One-line location string for cards and detail headers. */
 export function getFacilityLocation(facility: Facility): string {
   const parts: string[] = []
 
@@ -87,10 +92,12 @@ export function getFacilityLocation(facility: Facility): string {
   return region ? `${region}, Singapore` : "Singapore"
 }
 
+/** Alias for getFacilityNotes used on detail summaries. */
 export function getFacilitySummary(facility: Facility): string | null {
   return getFacilityNotes(facility.description)
 }
 
+/** Relative "Updated …" string for facility timestamps. */
 export function formatUpdatedAt(dateString: string): string {
   const updated = new Date(dateString)
   const now = new Date()
@@ -101,4 +108,13 @@ export function formatUpdatedAt(dateString: string): string {
   if (diffDays <= 0) return "Updated today"
   if (diffDays === 1) return "Updated 1 day ago"
   return `Updated ${diffDays} days ago`
+}
+
+/** Prefer stored photo_url; otherwise the tracked placeholder asset. */
+export function getFacilityPhotoUrl(
+  facility: Pick<Facility, "photo_url" | "amenity_types">
+): string {
+  if (facility.photo_url) return facility.photo_url
+  // Demo type photos under /facility-photos are gitignored (copyrighted).
+  return "/toilet.jpg"
 }

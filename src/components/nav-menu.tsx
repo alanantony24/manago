@@ -10,22 +10,18 @@ import {
 } from "react"
 import { usePathname } from "next/navigation"
 import { Link } from "next-view-transitions"
+import { useUser } from "@clerk/nextjs"
 import {
   CircleHelp,
+  ClipboardCheck,
   Home,
-  Navigation,
   PlusCircle,
-  Star,
   UserRound,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import BrandLogo from "@/components/brand-logo"
-import {
-  MANAGO_BRAND_ORANGE,
-  MANAGO_MINT,
-  MANAGO_NAVY,
-} from "@/lib/brand-colors"
+import { isAdminUser } from "@/lib/admin"
 
 type NavMenuContextValue = {
   isOpen: boolean
@@ -50,9 +46,7 @@ const NAV_ITEMS: {
   icon: LucideIcon
 }[] = [
   { href: "/nearby", label: "Home", icon: Home },
-  { href: "/locate", label: "Locate", icon: Navigation },
   { href: "/add", label: "Contribute", icon: PlusCircle },
-  { href: "/review", label: "Review", icon: Star },
   { href: "/profile", label: "Profile", icon: UserRound },
   { href: "/help", label: "Help", icon: CircleHelp },
 ]
@@ -81,24 +75,21 @@ export function MenuToggle({ className, variant = "onDark" }: MenuToggleProps) {
       <span className="relative block h-5 w-6" aria-hidden>
         <span
           className={cn(
-            "absolute left-0 top-0.5 block h-[3px] w-6 rounded-full transition-all duration-300 ease-out",
+            "absolute left-0 top-0.5 block h-[3px] w-6 rounded-full bg-manago-orange transition-all duration-300 ease-out",
             isOpen && "top-[9px] rotate-45"
           )}
-          style={{ backgroundColor: MANAGO_BRAND_ORANGE }}
         />
         <span
           className={cn(
-            "absolute left-0 top-[9px] block h-[3px] w-6 rounded-full transition-all duration-300 ease-out",
+            "absolute left-0 top-[9px] block h-[3px] w-6 rounded-full bg-manago-orange transition-all duration-300 ease-out",
             isOpen && "opacity-0 scale-x-0"
           )}
-          style={{ backgroundColor: MANAGO_BRAND_ORANGE }}
         />
         <span
           className={cn(
-            "absolute left-0 top-[17px] block h-[3px] w-6 rounded-full transition-all duration-300 ease-out",
+            "absolute left-0 top-[17px] block h-[3px] w-6 rounded-full bg-manago-orange transition-all duration-300 ease-out",
             isOpen && "top-[9px] -rotate-45"
           )}
-          style={{ backgroundColor: MANAGO_BRAND_ORANGE }}
         />
       </span>
     </button>
@@ -108,6 +99,19 @@ export function MenuToggle({ className, variant = "onDark" }: MenuToggleProps) {
 function NavDrawer() {
   const pathname = usePathname()
   const { isOpen, close } = useNavMenu()
+  const { user } = useUser()
+  const showAdmin = isAdminUser(user)
+
+  const items = showAdmin
+    ? [
+        ...NAV_ITEMS,
+        {
+          href: "/admin/submissions",
+          label: "Approve facilities",
+          icon: ClipboardCheck,
+        },
+      ]
+    : NAV_ITEMS
 
   useEffect(() => {
     close()
@@ -144,10 +148,9 @@ function NavDrawer() {
         id="app-nav-drawer"
         aria-hidden={!isOpen}
         className={cn(
-          "fixed inset-y-0 left-0 z-[70] flex w-[min(78vw,20rem)] flex-col shadow-2xl transition-transform duration-300 ease-out",
+          "fixed inset-y-0 left-0 z-[70] flex w-[min(78vw,20rem)] flex-col bg-manago-mint shadow-2xl transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
-        style={{ backgroundColor: MANAGO_MINT }}
       >
         <div className="flex items-center gap-2 px-5 pb-2 pt-6">
           <MenuToggle variant="onLight" className="bg-transparent shadow-none" />
@@ -155,7 +158,7 @@ function NavDrawer() {
         </div>
 
         <nav className="flex flex-col gap-1 px-5 pt-8">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }, index) => {
+          {items.map(({ href, label, icon: Icon }, index) => {
             const isActive =
               href === "/nearby"
                 ? pathname === "/" || pathname === "/nearby"
@@ -167,14 +170,13 @@ function NavDrawer() {
                 href={href}
                 onClick={close}
                 className={cn(
-                  "nav-drawer-link flex items-center gap-3.5 rounded-xl px-3 py-3.5 text-lg font-semibold tracking-tight transition-all duration-200",
+                  "nav-drawer-link flex items-center gap-3.5 rounded-xl px-3 py-3.5 text-lg font-semibold tracking-tight text-manago-navy transition-all duration-200",
                   "hover:bg-white/40 active:scale-[0.98]",
                   isActive && "bg-white/50",
                   isOpen && "nav-drawer-link-visible"
                 )}
                 style={{
-                  color: MANAGO_NAVY,
-                  transitionDelay: isOpen ? `${index * 60 + 100}ms` : "0ms",
+                  transitionDelay: isOpen ? `${index * 40 + 60}ms` : "0ms",
                 }}
               >
                 <Icon

@@ -8,6 +8,13 @@ import { getBearing, getDistanceMeters } from '@/lib/geo';
 
 type TravelMode = 'walking' | 'cycling' | 'driving';
 
+const TRAVEL_MODES = new Set<TravelMode>(['walking', 'cycling', 'driving']);
+
+/** Normalize travel mode; fall back to walking if the value is unexpected. */
+function resolveTravelMode(mode: TravelMode | undefined): TravelMode {
+  return mode && TRAVEL_MODES.has(mode) ? mode : 'walking';
+}
+
 interface Props {
   userLocation: [number, number] | null;
   destination: [number, number] | null;
@@ -49,6 +56,7 @@ function createPuckElement() {
   return el;
 }
 
+/** Turn-by-turn Mapbox map for the Locate flow (user puck + route line). */
 const MapView = forwardRef<MapViewHandle, Props>(function MapView(
   { userLocation, destination, destinationName, travelMode = 'walking', onRouteInfo },
   ref
@@ -154,7 +162,8 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView(
     const thisRequestId = ++requestIdRef.current;
 
     const updateRoute = async () => {
-      const url = `https://api.mapbox.com/directions/v5/mapbox/${travelMode}/${userLocation[0]},${userLocation[1]};${destination[0]},${destination[1]}?steps=true&geometries=geojson&access_token=${token}`;
+      const mode = resolveTravelMode(travelMode);
+      const url = `https://api.mapbox.com/directions/v5/mapbox/${mode}/${userLocation[0]},${userLocation[1]};${destination[0]},${destination[1]}?steps=true&geometries=geojson&access_token=${token}`;
 
       const res = await fetch(url);
       const data = await res.json();
