@@ -1,93 +1,217 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Link } from "next-view-transitions"
+import { useClerk, useUser } from "@clerk/nextjs"
+import { LogOut } from "lucide-react"
+import {
+  syncProfileAndGetActivity,
+  type ProfileDashboard,
+} from "@/app/actions/profile"
 import { AppPageHeader } from "@/components/app-page-header"
-import { MANAGO_NAVY } from "@/lib/brand-colors"
+import { Button } from "@/components/ui/button"
 
-const STAT_PLACEHOLDERS = [
-  { label: "Reviews written", value: "—" },
-  { label: "Facilities contributed", value: "—" },
-  { label: "Places verified", value: "—" },
-]
+/** Format a Date as a long locale date string, or "—" when missing. */
+function formatJoinedDate(date: Date | null | undefined) {
+  if (!date) return "—"
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+}
 
+/** Two-letter (or one-letter) initials from a display name. */
+function initialsFromName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase()
+  return `${parts[0].slice(0, 1)}${parts[1].slice(0, 1)}`.toUpperCase()
+}
+
+/** Signed-in user profile with activity counts from Supabase. */
 export default function ProfilePage() {
+  const { isLoaded, isSignedIn, user } = useUser()
+  const { signOut } = useClerk()
+  const [dashboard, setDashboard] = useState<ProfileDashboard | null>(null)
+  const [activityLoading, setActivityLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return
+
+    let cancelled = false
+
+    void Promise.resolve().then(async () => {
+      if (cancelled) return
+      setActivityLoading(true)
+      try {
+        const result = await syncProfileAndGetActivity()
+        if (!cancelled) setDashboard(result)
+      } finally {
+        if (!cancelled) setActivityLoading(false)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoaded, isSignedIn])
+
+  const activeDashboard = isSignedIn ? dashboard : null
+  const displayName = activeDashboard?.profile.display_name?.trim() || ""
+  const email = user?.primaryEmailAddress?.emailAddress
+  const imageUrl = user?.imageUrl
+  const joinedLabel = formatJoinedDate(user?.createdAt)
+
+  const activityStats = [
+    {
+      label: "Reviews written",
+      value: activityLoading
+        ? "…"
+        : String(activeDashboard?.activity.reviewsWritten ?? 0),
+    },
+    {
+      label: "Facilities contributed",
+      value: activityLoading
+        ? "…"
+        : String(activeDashboard?.activity.facilitiesContributed ?? 0),
+    },
+    {
+      label: "Places verified",
+      value: activityLoading
+        ? "…"
+        : String(activeDashboard?.activity.placesVerified ?? 0),
+    },
+  ]
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      <AppPageHeader subtitle="Profile" />
+    <main className="min-h-screen bg-background text-foreground">
+      <AppPageHeader />
       <div className="mx-auto max-w-lg px-6 py-10">
-        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div
-              className="flex size-16 items-center justify-center rounded-full text-xl font-bold text-white"
-              style={{ backgroundColor: MANAGO_NAVY }}
-              aria-hidden
-            >
-              ?
-            </div>
-            <div>
-              <h2
-                className="text-2xl font-bold tracking-tight"
-                style={{ color: MANAGO_NAVY }}
-              >
-                Your profile
-              </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                Sign in to see your account details.
-              </p>
-            </div>
-          </div>
-
-          <dl className="mt-6 space-y-3 border-t border-gray-100 pt-5 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-500">Display name</dt>
-              <dd className="font-medium text-gray-900">Not signed in</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-500">Date joined</dt>
-              <dd className="font-medium text-gray-900">—</dd>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-gray-500">Account status</dt>
-              <dd className="font-medium text-gray-900">Waiting for auth</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="mt-6">
-          <h3
-            className="text-lg font-semibold tracking-tight"
-            style={{ color: MANAGO_NAVY }}
-          >
-            Activity
-          </h3>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {STAT_PLACEHOLDERS.map((stat) => (
+        {!isLoaded ? (
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-4">
               <div
-                key={stat.label}
-                className="rounded-2xl border border-gray-200 bg-white p-4 text-center shadow-sm"
+                className="size-16 animate-pulse rounded-full bg-muted"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-7 w-40 animate-pulse rounded bg-muted" />
+                <div className="h-4 w-56 animate-pulse rounded bg-muted/70" />
+              </div>
+            </div>
+          </section>
+        ) : !isSignedIn || !user ? (
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div
+                className="flex size-16 items-center justify-center rounded-full bg-manago-navy text-xl font-bold text-white"
+                aria-hidden
               >
-                <p className="text-2xl font-bold text-manago-navy">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                  {stat.label}
+                ?
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-manago-navy">
+                  Your profile
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sign in to see your account details.
                 </p>
               </div>
-            ))}
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-gray-600">
-            {/* TODO(auth): replace placeholders with Clerk user profile fields
-                and live counts from reviews / contributions once those
-                features ship. */}
-            These stats will fill in after authentication and reviews are
-            connected.
-          </p>
-        </section>
+            </div>
+            <Button asChild size="lg" className="mt-6 w-full">
+              <Link href="/sign-in">Sign in</Link>
+            </Button>
+          </section>
+        ) : (
+          <>
+            <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- Clerk CDN avatars; avoid next/image remote config
+                  <img
+                    src={imageUrl}
+                    alt=""
+                    width={64}
+                    height={64}
+                    className="size-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="flex size-16 items-center justify-center rounded-full bg-manago-navy text-xl font-bold text-white"
+                    aria-hidden
+                  >
+                    {initialsFromName(displayName)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-bold tracking-tight text-manago-navy">
+                    Your profile
+                  </h2>
+                  {email ? (
+                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                      {email}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Signed in to ManaGo
+                    </p>
+                  )}
+                </div>
+              </div>
 
-        <section className="mt-6 rounded-2xl border border-dashed border-gray-300 bg-white p-5 text-sm text-gray-600">
-          <p className="font-medium text-gray-900">Next step for the team</p>
-          <p className="mt-2 leading-relaxed">
-            Once the auth branch is ready, wire this page to the signed-in
-            Clerk user (name, avatar, created date) and keep the layout above.
-          </p>
-        </section>
+              <dl className="mt-6 space-y-3 border-t border-border pt-5 text-sm">
+                {displayName ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-muted-foreground">Display name</dt>
+                    <dd className="truncate font-medium text-manago-navy">
+                      {displayName}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-muted-foreground">Date joined</dt>
+                  <dd className="font-medium text-manago-navy">{joinedLabel}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-muted-foreground">Account status</dt>
+                  <dd className="font-medium text-manago-navy">Active</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="mt-6">
+              <h3 className="text-lg font-semibold tracking-tight text-manago-navy">
+                Activity
+              </h3>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {activityStats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="rounded-2xl border border-border bg-card p-4 text-center shadow-sm"
+                  >
+                    <p className="text-2xl font-bold text-manago-navy">
+                      {stat.value}
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <Button
+              type="button"
+              size="lg"
+              className="mt-6 h-12 w-full gap-2 rounded-xl border border-destructive/30 bg-red-50 text-red-700 hover:border-destructive/50 hover:bg-red-100 hover:text-red-800"
+              onClick={() => signOut({ redirectUrl: "/sign-in" })}
+            >
+              <LogOut aria-hidden />
+              Log out
+            </Button>
+          </>
+        )}
       </div>
     </main>
   )

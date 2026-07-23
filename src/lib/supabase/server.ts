@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
+/** Create a cookie-aware Supabase client for Server Components / RSC reads. */
 export async function createClient() {
   const cookieStore = await cookies()
 

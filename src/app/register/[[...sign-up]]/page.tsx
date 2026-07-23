@@ -1,5 +1,6 @@
-import { SignUp } from "@clerk/nextjs";
-import { AuthShell } from "@/components/auth-shell";
+import { SignUp } from "@clerk/nextjs"
+import { AuthShell } from "@/components/auth-shell"
+import { clerkAuthAppearance } from "@/lib/clerk-appearance"
 
 export default function RegisterPage() {
   return (
@@ -12,14 +13,8 @@ export default function RegisterPage() {
       <SignUp
         forceRedirectUrl="/nearby"
         signInUrl="/sign-in"
-        appearance={{
-          elements: {
-            headerTitle: "text-lg font-semibold text-slate-800 tracking-tight",
-            headerSubtitle: "text-xs text-slate-500",
-            card: "shadow-xl border border-slate-100",
-          },
-        }}
+        appearance={clerkAuthAppearance}
       />
     </AuthShell>
-  );
+  )
 }

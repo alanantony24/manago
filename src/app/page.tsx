@@ -1,5 +1,7 @@
+import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 
-export default function Home() {
-  redirect("/nearby")
+export default async function Home() {
+  const { userId } = await auth()
+  redirect(userId ? "/nearby" : "/sign-in")
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
+  "/",
   "/sign-in(.*)",
   "/register(.*)",
   "/sign-up(.*)",
@@ -14,6 +15,13 @@ const clerkConfigured =
   Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 const protectRoutes = clerkMiddleware(async (auth, req) => {
+  if (req.nextUrl.pathname === "/") {
+    const { userId } = await auth();
+    return NextResponse.redirect(
+      new URL(userId ? "/nearby" : "/sign-in", req.url)
+    );
+  }
+
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
@@ -21,6 +29,9 @@ const protectRoutes = clerkMiddleware(async (auth, req) => {
 
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   if (!clerkConfigured) {
+    if (req.nextUrl.pathname === "/") {
+      return NextResponse.redirect(new URL("/nearby", req.url));
+    }
     return NextResponse.next();
   }
 
