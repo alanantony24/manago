@@ -47,6 +47,33 @@ function statusFromQuality() {
   return "active"
 }
 
+/**
+ * @returns {Record<string, string[]>}
+ */
+function loadPhotoPools() {
+  const manifestPath = resolve(__dirname, "../data/facility-photo-manifest.json")
+  if (!existsSync(manifestPath)) return {}
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"))
+    return manifest.photos ?? {}
+  } catch {
+    console.warn("Could not read facility-photo-manifest.json; photo_url will be null.")
+    return {}
+  }
+}
+
+/**
+ * @param {Record<string, string[]>} pools
+ * @param {string} type
+ * @returns {string | null}
+ */
+function pickRandomPhoto(pools, type) {
+  const pool = pools[type]
+  if (!pool || pool.length === 0) return null
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
 async function main() {
   loadEnvFile()
 
@@ -69,7 +96,9 @@ async function main() {
 
   if (typesError) {
     console.error("Failed to load amenity_types:", typesError.message)
-    console.error("Run supabase/setup.sql in the Supabase SQL editor first.")
+    console.error(
+      "Ensure amenity_types exists in your Supabase project with the expected slugs."
+    )
     process.exit(1)
   }
 
@@ -83,6 +112,19 @@ async function main() {
     process.exit(1)
   }
 
+  const photoPools =
+    process.env.SEED_LOCAL_PHOTOS === "1" ? loadPhotoPools() : {}
+  if (process.env.SEED_LOCAL_PHOTOS === "1") {
+    const photoPoolSizes = TYPE_SLUGS.map(
+      (slug) => `${slug}: ${photoPools[slug]?.length ?? 0}`
+    )
+    console.log(`Photo pools — ${photoPoolSizes.join(", ")}`)
+  } else {
+    console.log(
+      "Skipping local photo_url paths (set SEED_LOCAL_PHOTOS=1 after npm run scrape-photos)."
+    )
+  }
+
   const jsonPath = resolve(__dirname, "../data/facilities.json")
   const parsed = JSON.parse(readFileSync(jsonPath, "utf-8"))
   const facilities = loadFacilitiesFromJson(parsed)
@@ -92,6 +134,7 @@ async function main() {
     process.exit(1)
   }
 
+  let withPhotos = 0
   const rows = facilities.map((item) => {
     const amenityTypeId = typeIdBySlug.get(item.type)
     if (!amenityTypeId) {
@@ -99,6 +142,8 @@ async function main() {
     }
 
     const dataQuality = item.data_quality ?? "partial"
+    const photo_url = pickRandomPhoto(photoPools, item.type)
+    if (photo_url) withPhotos += 1
 
     return {
       external_id: item.id,
@@ -110,7 +155,7 @@ async function main() {
       building_name: item.building_name ?? null,
       floor: item.floor ?? null,
       description: buildDescription(item),
-      photo_url: null,
+      photo_url,
       is_accessible: item.is_accessible ?? inferAccessible(item.details, item.raw_tags),
       is_verified: false,
       status: statusFromQuality(dataQuality),
@@ -123,18 +168,17 @@ async function main() {
     qualityCounts[q] = (qualityCounts[q] ?? 0) + 1
   }
 
-  const externalIds = rows.map((row) => row.external_id)
-
-  console.log("Clearing previously seeded facilities...")
+  console.log("Clearing previously seeded facilities (all with external_id)...")
+  // Remove the full seeded set so pruned/deleted rows do not linger in Supabase.
   const { error: deleteError } = await supabase
     .from("facilities")
     .delete()
-    .in("external_id", externalIds)
+    .not("external_id", "is", null)
 
   if (deleteError) {
     console.error("Failed to clear existing facilities:", deleteError.message)
     console.error(
-      "Make sure the external_id column exists. Run supabase/add_external_id.sql in Supabase SQL Editor."
+      "Make sure facilities.external_id exists. Run supabase/setup.sql if needed."
     )
     process.exit(1)
   }
@@ -162,6 +206,7 @@ async function main() {
   console.log(
     `  Complete: ${qualityCounts.complete ?? 0}, Partial: ${qualityCounts.partial ?? 0}, Minimal: ${qualityCounts.minimal ?? 0}`
   )
+  console.log(`  With photos: ${withPhotos}/${seeded}`)
 }
 
 main()

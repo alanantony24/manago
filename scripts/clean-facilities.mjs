@@ -26,9 +26,11 @@ const output = {
     data_quality_summary: qualityCounts,
     total_toilets_with_bidets: grouped.toilets_with_bidets.length,
     total_water_coolers: grouped.water_coolers.length,
+    total_nursing_rooms: grouped.nursing_rooms.length,
   },
   toilets_with_bidets: grouped.toilets_with_bidets,
   water_coolers: grouped.water_coolers,
+  nursing_rooms: grouped.nursing_rooms,
 }
 
 writeFileSync(jsonPath, JSON.stringify(output, null, 4) + "\n", "utf-8")

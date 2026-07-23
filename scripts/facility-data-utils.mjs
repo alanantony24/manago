@@ -195,8 +195,10 @@ export function isGenericName(name) {
   if (!name) return true
   const lower = name.trim().toLowerCase()
   if (GENERIC_NAMES.has(lower)) return true
-  if (/^water cooler\s*(near|\(|—|-)/i.test(name)) return true
+  if (/^water cooler\s*near\b/i.test(name)) return true
   if (/^public (drinking )?water/i.test(name)) return true
+  // Bare "Water Cooler —" with no place label
+  if (/^water cooler\s*[—\-–]\s*$/i.test(name)) return true
   return false
 }
 
@@ -579,6 +581,7 @@ export function loadFacilitiesFromJson(parsed) {
   return [
     ...(parsed.toilets_with_bidets ?? []),
     ...(parsed.water_coolers ?? []),
+    ...(parsed.nursing_rooms ?? []),
   ]
 }
 
@@ -586,6 +589,7 @@ export function groupFacilitiesByType(facilities) {
   return {
     toilets_with_bidets: facilities.filter((f) => f.type === "toilet_with_bidet"),
     water_coolers: facilities.filter((f) => f.type === "water_cooler"),
+    nursing_rooms: facilities.filter((f) => f.type === "nursing_room"),
   }
 }
 
