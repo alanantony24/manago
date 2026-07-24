@@ -208,12 +208,10 @@
   overflow: visible !important;
 }
 
-/* Clerk draws “borders” with box-shadow; those get clipped into ugly side ticks. */
-.auth-shell-card input,
-.auth-shell-card input.cl-input,
-.auth-shell-card input.cl-formFieldInput,
-.auth-shell-card .cl-input,
-.auth-shell-card .cl-formFieldInput {
+/* Regular email/password inputs — solid white fields with navy text. */
+.auth-shell-card input:not([autocomplete="one-time-code"]):not([data-input-otp]):not([inputmode="numeric"]),
+.auth-shell-card input.cl-input:not([autocomplete="one-time-code"]),
+.auth-shell-card input.cl-formFieldInput:not([autocomplete="one-time-code"]) {
   overflow: visible !important;
   box-shadow: none !important;
   outline: none !important;
@@ -221,24 +219,65 @@
   border-width: 1px !important;
   border-color: var(--border) !important;
   background-color: #ffffff !important;
+  color: #1a4d59 !important;
+  -webkit-text-fill-color: #1a4d59 !important;
 }
 
-.auth-shell-card input:focus,
-.auth-shell-card input:focus-visible,
-.auth-shell-card input:focus-within,
-.auth-shell-card input[data-variant]:focus,
-.auth-shell-card input[data-variant]:focus-within,
-.auth-shell-card input[data-variant="default"]:focus,
-.auth-shell-card input[data-variant="default"]:focus-within,
-.auth-shell-card .cl-input:focus,
-.auth-shell-card .cl-input:focus-visible,
-.auth-shell-card .cl-input:focus-within,
-.auth-shell-card .cl-formFieldInput:focus,
-.auth-shell-card .cl-formFieldInput:focus-visible,
-.auth-shell-card .cl-formFieldInput:focus-within {
+.auth-shell-card input:not([autocomplete="one-time-code"]):focus,
+.auth-shell-card input:not([autocomplete="one-time-code"]):focus-visible,
+.auth-shell-card input.cl-formFieldInput:not([autocomplete="one-time-code"]):focus,
+.auth-shell-card input.cl-formFieldInput:not([autocomplete="one-time-code"]):focus-visible {
   border-color: var(--color-manago-teal) !important;
   box-shadow: none !important;
   outline: none !important;
+}
+
+/*
+  Clerk OTP (email/SMS code) uses a transparent caret input over digit slots.
+  Forcing a white fill made typed codes look blank — keep it invisible and
+  show disc “dots” in the visible slots instead of empty boxes.
+*/
+.auth-shell-card input[autocomplete="one-time-code"],
+.auth-shell-card input[data-input-otp],
+.auth-shell-card .cl-otpCodeField input {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #1a4d59 !important;
+}
+
+.auth-shell-card .cl-otpCodeField,
+.auth-shell-card .cl-otpCodeFieldInputs {
+  width: 100% !important;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.auth-shell-card .cl-otpCodeFieldInput,
+.auth-shell-card [data-testid="otp-input-segment"] {
+  min-width: 2.5rem;
+  min-height: 2.75rem;
+  border-radius: 0.625rem !important;
+  border: 1px solid var(--border) !important;
+  background-color: #ffffff !important;
+  color: #1a4d59 !important;
+  -webkit-text-fill-color: #1a4d59 !important;
+  /* Show a dot for each entered digit instead of a blank slot. */
+  -webkit-text-security: disc;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.auth-shell-card .cl-otpCodeFieldInput[data-focus="true"],
+.auth-shell-card .cl-otpCodeFieldInput:focus,
+.auth-shell-card [data-testid="otp-input-segment"][data-status="selected"],
+.auth-shell-card [data-testid="otp-input-segment"][data-status="cursor"] {
+  border-color: var(--color-manago-teal) !important;
 }
 
 /* Facility submission celebration */

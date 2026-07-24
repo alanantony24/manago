@@ -61,6 +61,10 @@ export const clerkAuthAppearance = {
     // Border-only focus — no ring/shadow (those get clipped and look uneven).
     formFieldInput:
       "rounded-lg border-border bg-white text-manago-navy shadow-none outline-none placeholder:text-muted-foreground focus:border-manago-teal focus:shadow-none focus:outline-none focus:ring-0",
+    otpCodeField: "w-full",
+    otpCodeFieldInputs: "w-full justify-between gap-2",
+    otpCodeFieldInput:
+      "size-11 rounded-lg border border-border bg-white text-manago-navy text-lg font-bold",
     formButtonPrimary:
       "bg-manago-teal text-white shadow-none hover:bg-manago-teal-dark",
     footerActionLink: "font-semibold text-manago-teal hover:text-manago-teal-dark",
