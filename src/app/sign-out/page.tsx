@@ -14,7 +14,9 @@ export default function SignOutPage() {
 
     void (async () => {
       try {
-        await signOut({ redirectUrl: "/sign-in" })
+        // Prefer an absolute app URL so Clerk does not bounce to Account Portal.
+        await signOut({ redirectUrl: `${window.location.origin}/sign-in` })
+        if (!cancelled) window.location.assign("/sign-in")
       } catch (error) {
         console.error("Sign out failed:", error)
         if (!cancelled) router.replace("/sign-in")

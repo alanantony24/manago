@@ -29,18 +29,29 @@ function redirectHome(req: NextRequest, signedIn: boolean) {
 /**
  * Always export `clerkMiddleware` when Clerk is configured so auth()
  * detection works. When keys are missing, fall back to a plain redirect.
+ *
+ * Pass explicit sign-in/up URLs so `auth.protect()` never falls back to
+ * Clerk's hosted Account Portal (purple/black UI) when env vars are unset.
  */
 export default clerkConfigured
-  ? clerkMiddleware(async (auth, req) => {
-      if (req.nextUrl.pathname === "/") {
-        const { userId } = await auth()
-        return redirectHome(req, Boolean(userId))
-      }
+  ? clerkMiddleware(
+      async (auth, req) => {
+        if (req.nextUrl.pathname === "/") {
+          const { userId } = await auth()
+          return redirectHome(req, Boolean(userId))
+        }
 
-      if (!isPublicRoute(req)) {
-        await auth.protect()
+        if (!isPublicRoute(req)) {
+          await auth.protect({
+            unauthenticatedUrl: new URL("/sign-in", req.url).href,
+          })
+        }
+      },
+      {
+        signInUrl: "/sign-in",
+        signUpUrl: "/register",
       }
-    })
+    )
   : function middleware(req: NextRequest) {
       if (req.nextUrl.pathname === "/") {
         return NextResponse.redirect(new URL("/nearby", req.url))
