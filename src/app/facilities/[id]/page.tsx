@@ -35,7 +35,7 @@ export default async function FacilityPage({ params }: FacilityPageProps) {
 
   const { data: reviewsData } = await supabase
     .from("reviews")
-    .select("*, profiles(display_name)")
+    .select("*")
     .eq("facility_id", id)
     .eq("is_approved", true)
     .order("created_at", { ascending: false })

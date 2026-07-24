@@ -13,6 +13,7 @@ import { MenuToggle } from "@/components/nav-menu"
 import { FacilityTagPill } from "@/components/facility-tag-pill"
 import type { AmenityType, Facility } from "@/types/facility"
 import type { Review } from "@/types/review"
+import { anonymousNameFromSeed } from "@/lib/anonymous-name"
 import { getAggregateRating, formatReviewDate } from "@/lib/reviews"
 import {
   formatUpdatedAt,
@@ -206,11 +207,9 @@ export default function FacilityDetailView({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <StarRating rating={review.rating} />
-                      {review.profiles?.display_name?.trim() ? (
-                        <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
-                          {review.profiles.display_name.trim()}
-                        </p>
-                      ) : null}
+                      <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
+                        {anonymousNameFromSeed(review.id)}
+                      </p>
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground/70">
                       {formatReviewDate(review.created_at)}
