@@ -20,7 +20,7 @@ export default async function Nearby() {
         supabase
           .from("facilities")
           .select(
-            "id, name, latitude, longitude, address, description, photo_url, is_accessible, amenity_types(id, slug, label)"
+            "id, name, latitude, longitude, address, building_name, floor, description, photo_url, is_accessible, amenity_types(id, slug, label)"
           ),
         supabase
           .from("reviews")

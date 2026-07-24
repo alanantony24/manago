@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import { MANAGO_BRAND_ORANGE, MANAGO_TEAL } from "@/lib/brand-colors"
+import { getFacilityLocation } from "@/lib/facility-helpers"
 import type { Facility } from "@/types/facility"
 
 // Singapore city center. Used until we know where the user actually is.
@@ -108,18 +109,30 @@ export default function FacilityMap({
       if (markers.has(facility.id)) continue
 
       const popupContent = document.createElement("div")
+      popupContent.className = "flex max-w-[220px] flex-col gap-2 p-0.5"
+
       const popupName = document.createElement("strong")
+      popupName.className = "text-sm leading-snug text-manago-navy"
       popupName.textContent = facility.name
       popupContent.append(popupName)
 
-      if (facility.address) {
-        const popupAddress = document.createElement("span")
-        popupAddress.className = "text-xs"
-        popupAddress.textContent = facility.address
-        popupContent.append(document.createElement("br"), popupAddress)
-      }
+      const popupLocation = document.createElement("p")
+      popupLocation.className = "text-xs leading-snug text-muted-foreground"
+      popupLocation.textContent = getFacilityLocation(facility)
+      popupContent.append(popupLocation)
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setDOMContent(
+      const navigateLink = document.createElement("a")
+      navigateLink.href = `/locate?facilityId=${facility.id}`
+      navigateLink.className =
+        "inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-manago-teal px-3 text-xs font-medium text-white no-underline hover:bg-manago-teal-dark"
+      navigateLink.textContent = "Navigate"
+      navigateLink.addEventListener("click", (event) => {
+        // Keep Mapbox from treating the click as a map/popup dismiss.
+        event.stopPropagation()
+      })
+      popupContent.append(navigateLink)
+
+      const popup = new mapboxgl.Popup({ offset: 25, closeButton: true }).setDOMContent(
         popupContent
       )
 
@@ -136,7 +149,7 @@ export default function FacilityMap({
     }
   }, [facilities])
 
-  // When a facility is picked from the list, fly to it and open its popup.
+  // When a facility is selected (list or pin), fly to it and ensure its popup is open.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !selectedFacilityId) return
@@ -148,7 +161,14 @@ export default function FacilityMap({
       center: [facility.longitude, facility.latitude],
       zoom: NEARBY_ZOOM,
     })
-    markersRef.current.get(selectedFacilityId)?.togglePopup()
+
+    const marker = markersRef.current.get(selectedFacilityId)
+    const popup = marker?.getPopup()
+    // Pin clicks already open the popup via Mapbox; only open if closed so we
+    // don't toggle it shut again on the same selection.
+    if (marker && popup && !popup.isOpen()) {
+      marker.togglePopup()
+    }
   }, [selectedFacilityId, facilities])
 
   return <div ref={containerRef} className="h-64 w-full rounded-md" />
