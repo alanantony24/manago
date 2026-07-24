@@ -1,10 +1,7 @@
-/** ManaGo brand palette — single source of truth for UI color. */
+/** ManaGo brand palette — JS/SVG usage. Tailwind tokens live in globals.css. */
 export const MANAGO_TEAL = "#007979"
 export const MANAGO_TEAL_DARK = "#0B7F7F"
 export const MANAGO_NAVY = "#1A4D59"
 export const MANAGO_MINT = "#D4E8D0"
 export const MANAGO_BRAND_ORANGE = "#F39C12"
 export const MANAGO_CHIP = "#A3C793"
-export const MANAGO_NOTICE = "#CBF0ED"
-export const MANAGO_NOTICE_TEXT = "#084F4F"
-export const MANAGO_SURFACE = "#F9FAFB"

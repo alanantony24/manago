@@ -1,0 +1,52 @@
+[
+  {
+    "id": "01-nearby",
+    "label": "Nearby map & list",
+    "path": "/nearby"
+  },
+  {
+    "id": "02-nearby-filter",
+    "label": "Amenity filters",
+    "path": "/nearby"
+  },
+  {
+    "id": "03-facility-detail",
+    "label": "Facility detail",
+    "path": "/facilities/b1333558-a556-4654-869d-4057371bc431"
+  },
+  {
+    "id": "04-locate",
+    "label": "Turn-by-turn locate",
+    "path": "/locate?facilityId=b1333558-a556-4654-869d-4057371bc431"
+  },
+  {
+    "id": "05-sign-in",
+    "label": "Sign in",
+    "path": "/sign-in"
+  },
+  {
+    "id": "06-register",
+    "label": "Register",
+    "path": "/register"
+  },
+  {
+    "id": "07-contribute",
+    "label": "Contribute a place",
+    "path": "/add"
+  },
+  {
+    "id": "08-review",
+    "label": "Leave a review",
+    "path": "/facilities/b1333558-a556-4654-869d-4057371bc431/review"
+  },
+  {
+    "id": "09-help",
+    "label": "Help & FAQ",
+    "path": "/help"
+  },
+  {
+    "id": "10-nav-drawer",
+    "label": "Navigation menu",
+    "path": "/nearby"
+  }
+]

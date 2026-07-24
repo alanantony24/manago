@@ -32,13 +32,11 @@ function parseDescription(description: string | null) {
   return { notes, region, quality }
 }
 
-/** Human-readable notes from a packed description (no metadata tags). */
-export function getFacilityNotes(description: string | null): string | null {
+function getFacilityNotes(description: string | null): string | null {
   return parseDescription(description).notes || null
 }
 
-/** Region tag from a packed description, if present. */
-export function getFacilityRegion(description: string | null): string | null {
+function getFacilityRegion(description: string | null): string | null {
   return parseDescription(description).region
 }
 

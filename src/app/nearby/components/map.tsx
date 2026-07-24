@@ -122,7 +122,7 @@ export default function FacilityMap({
       closeButton.type = "button"
       closeButton.setAttribute("aria-label", "Close")
       closeButton.className =
-        "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-base leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-manago-navy"
+        "inline-flex shrink-0 items-center justify-center p-0 text-base leading-none text-muted-foreground hover:text-manago-navy"
       closeButton.textContent = "×"
 
       header.append(popupName, closeButton)

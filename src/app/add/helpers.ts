@@ -37,7 +37,7 @@ export const EMPTY_FIELD_ERRORS: FieldErrors = {
 }
 
 /** Normalize a label/slug for fuzzy overlap checks. */
-export function normalizeKey(value: string) {
+function normalizeKey(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "")
 }
 
