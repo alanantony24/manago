@@ -109,12 +109,24 @@ export default function FacilityMap({
       if (markers.has(facility.id)) continue
 
       const popupContent = document.createElement("div")
-      popupContent.className = "flex max-w-[220px] flex-col gap-2 p-0.5"
+      popupContent.className = "flex max-w-[220px] flex-col gap-2"
+
+      const header = document.createElement("div")
+      header.className = "flex items-start justify-between gap-2"
 
       const popupName = document.createElement("strong")
-      popupName.className = "text-sm leading-snug text-manago-navy"
+      popupName.className = "min-w-0 flex-1 text-sm leading-snug text-manago-navy"
       popupName.textContent = facility.name
-      popupContent.append(popupName)
+
+      const closeButton = document.createElement("button")
+      closeButton.type = "button"
+      closeButton.setAttribute("aria-label", "Close")
+      closeButton.className =
+        "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-base leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-manago-navy"
+      closeButton.textContent = "×"
+
+      header.append(popupName, closeButton)
+      popupContent.append(header)
 
       const popupLocation = document.createElement("p")
       popupLocation.className = "text-xs leading-snug text-muted-foreground"
@@ -124,7 +136,7 @@ export default function FacilityMap({
       const navigateLink = document.createElement("a")
       navigateLink.href = `/locate?facilityId=${facility.id}`
       navigateLink.className =
-        "inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-manago-teal px-3 text-xs font-medium text-white no-underline hover:bg-manago-teal-dark"
+        "inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-manago-teal px-3 text-xs font-medium text-white no-underline outline-none hover:bg-manago-teal-dark focus-visible:ring-2 focus-visible:ring-manago-teal/40"
       navigateLink.textContent = "Navigate"
       navigateLink.addEventListener("click", (event) => {
         // Keep Mapbox from treating the click as a map/popup dismiss.
@@ -132,9 +144,16 @@ export default function FacilityMap({
       })
       popupContent.append(navigateLink)
 
-      const popup = new mapboxgl.Popup({ offset: 25, closeButton: true }).setDOMContent(
+      // Custom close control above — Mapbox's default × sits cramped in the corner.
+      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false }).setDOMContent(
         popupContent
       )
+
+      closeButton.addEventListener("click", (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        popup.remove()
+      })
 
       const marker = new mapboxgl.Marker({ color: MANAGO_BRAND_ORANGE })
         .setLngLat([facility.longitude, facility.latitude])
